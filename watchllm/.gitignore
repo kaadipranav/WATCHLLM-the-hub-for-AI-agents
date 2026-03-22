@@ -1,0 +1,10 @@
+node_modules
+dist
+.next
+out
+.turbo
+.wrangler
+.dev.vars
+*.local
+.DS_Store
+pnpm-debug.log*

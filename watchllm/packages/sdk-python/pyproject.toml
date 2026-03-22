@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "watchllm"
+version = "0.0.0"
+description = "WatchLLM Python SDK and CLI (Phase 1 scaffold)"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["mypy>=1.8"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/watchllm"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true

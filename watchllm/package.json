@@ -1,0 +1,22 @@
+{
+  "name": "watchllm",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @watchllm/web dev",
+    "dev:api": "pnpm build:types && wrangler dev",
+    "deploy:web": "pnpm --filter @watchllm/web build",
+    "deploy:workers": "wrangler deploy && wrangler deploy --env orchestrator && wrangler deploy --env chaos",
+    "db:migrate:local": "wrangler d1 migrations apply watchllm-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply watchllm-db --remote",
+    "db:studio": "wrangler d1 studio watchllm-db",
+    "build:types": "pnpm --filter @watchllm/types build"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "wrangler": "^4.14.0"
+  }
+}
