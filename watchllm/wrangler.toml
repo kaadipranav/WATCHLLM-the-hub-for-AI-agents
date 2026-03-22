@@ -50,6 +50,13 @@ queue = "watchllm-simulations"
 max_batch_size = 10
 max_batch_timeout = 30
 
+[[env.orchestrator.services]]
+binding = "CHAOS_WORKER"
+service = "watchllm-chaos"
+
+[env.orchestrator.vars]
+CHAOS_WORKER_URL = ""
+
 [env.chaos]
 name = "watchllm-chaos"
 main = "apps/workers/chaos/src/index.ts"
@@ -67,3 +74,6 @@ bucket_name = "watchllm-traces"
 [[env.chaos.kv_namespaces]]
 binding = "KV"
 id = "REPLACE_WITH_ACTUAL_ID"
+
+[env.chaos.ai]
+binding = "AI"

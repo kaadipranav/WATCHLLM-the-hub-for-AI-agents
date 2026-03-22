@@ -7,6 +7,7 @@ import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { handleAuthRequest } from "./auth";
+import mockAgentRoutes from "./routes/mock-agent";
 import {
   requireAuth,
   requireSession,
@@ -450,6 +451,8 @@ app.get("/api/v1/health", (c) =>
     timestamp: nowUnix(),
   }),
 );
+
+app.route("/api/v1/dev/mock-agent", mockAgentRoutes);
 
 app.get("/api/v1/auth/signin/github", async (c) => {
   const url = new URL(c.req.url);
@@ -1026,7 +1029,7 @@ simulations.post("/", async (c) =>
 
     await c.env.DB.batch(statements);
     await c.env.SIMULATION_QUEUE.send({
-      type: "simulation",
+      type: "simulate",
       simulation_id: simulationId,
       user_id: user.id,
     });

@@ -146,6 +146,9 @@ export type Env = {
   TRACES: R2Bucket;
   KV: KVNamespace;
   SIMULATION_QUEUE?: Queue<unknown>;
+  CHAOS_WORKER?: Fetcher;
+  CHAOS_WORKER_URL?: string;
+  AI?: Ai;
   BETTER_AUTH_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
