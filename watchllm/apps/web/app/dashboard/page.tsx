@@ -1,6 +1,40 @@
-import Link from 'next/link';
+import Link from "next/link";
+import { headers } from "next/headers";
+import type { Agent, ApiEnvelope, SimulationListPayload, SimulationStatusPayload } from "@/lib/api";
+import { StatusBadge } from "./components/StatusBadge";
 
-export default function DashboardOverviewPage() {
+function requestOrigin(): string {
+  const h = headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${host}`;
+}
+
+async function getJson<T>(path: string): Promise<T | null> {
+  const response = await fetch(`${requestOrigin()}${path}`, {
+    cache: "no-store",
+    headers: {
+      cookie: headers().get("cookie") ?? "",
+    },
+  });
+  if (!response.ok) return null;
+  const payload = (await response.json()) as ApiEnvelope<T>;
+  return payload.data;
+}
+
+export default async function DashboardOverviewPage() {
+  const simulations = await getJson<SimulationListPayload>("/api/v1/simulations?limit=5");
+  const agents = await getJson<Agent[]>("/api/v1/agents");
+  const latestSimulation = simulations?.items?.[0];
+  const latestStatus = latestSimulation
+    ? await getJson<SimulationStatusPayload>(`/api/v1/simulations/${latestSimulation.id}/status`)
+    : null;
+
+  const items = simulations?.items ?? [];
+  const failedCount = items.filter((item) => item.status === "failed").length;
+  const completionCount = latestStatus?.completed_runs ?? 0;
+  const totalRuns = latestStatus?.total_runs ?? 0;
+
   return (
     <div className="text-white">
       <div className="flex justify-between items-center mb-8">
@@ -12,10 +46,17 @@ export default function DashboardOverviewPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Simulations", value: "24", sub: "This month" },
-          { label: "Failures Found", value: "8", sub: "33% failure rate" },
-          { label: "Avg Severity", value: "0.72", sub: "High risk" },
-          { label: "Monthly Usage", value: "24/500", sub: "Free tier" },
+          { label: "Total Simulations", value: `${simulations?.total ?? 0}`, sub: "all time" },
+          { label: "Total Failures Found", value: `${failedCount}`, sub: "completed runs" },
+          {
+            label: "Avg Severity",
+            value: `${latestStatus?.severity_by_category ? (
+              Object.values(latestStatus.severity_by_category).reduce((sum, s) => sum + s, 0) /
+              Math.max(Object.values(latestStatus.severity_by_category).length, 1)
+            ).toFixed(2) : "0.00"}`,
+            sub: "last simulation",
+          },
+          { label: "Simulations This Month", value: `${completionCount}/${Math.max(totalRuns, 5)}`, sub: "vs tier limit" },
         ].map((stat, i) => (
           <div key={i} className="bg-[#111] p-6 rounded-xl border border-white/5">
             <div className="text-gray-400 text-sm mb-2">{stat.label}</div>
@@ -37,20 +78,29 @@ export default function DashboardOverviewPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {[1,2,3,4,5].map(i => (
-              <tr key={i} className="hover:bg-white/[0.02] transition">
-                <td className="px-6 py-4 font-mono text-gray-300">sales_bot_v2</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Completed
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-500">2 hours ago</td>
-                <td className="px-6 py-4">
-                  <span className="text-red-400 font-mono">0.84</span>
+            {items.length === 0 ? (
+              <tr>
+                <td className="px-6 py-8 text-gray-500" colSpan={4}>
+                  No simulations yet.
                 </td>
               </tr>
-            ))}
+            ) : (
+              items.map((simulation) => {
+                const agentName = agents?.find((a) => a.id === simulation.agent_id)?.name ?? simulation.agent_id;
+                return (
+                  <tr key={simulation.id} className="hover:bg-white/[0.02] transition">
+                    <td className="px-6 py-4 font-mono text-gray-300">{agentName}</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={simulation.status} />
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">{new Date(simulation.created_at * 1000).toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-gray-300">-</span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

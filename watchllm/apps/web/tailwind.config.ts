@@ -8,9 +8,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#080808",
-        foreground: "#f0f0f0",
-        accent: "#00C896",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        accent: "var(--accent)",
+        "bg-elev-1": "var(--bg-elev-1)",
+        "bg-elev-2": "var(--bg-elev-2)",
+        muted: "var(--muted)",
+        danger: "var(--danger)",
+        warning: "var(--warning)",
+        success: "var(--success)",
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)"],
