@@ -6,7 +6,17 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        background: "#080808",
+        foreground: "#f0f0f0",
+        accent: "#00C896",
+      },
+      fontFamily: {
+        sans: ["var(--font-geist-sans)"],
+        mono: ["var(--font-geist-mono)"],
+      },
+    },
   },
   plugins: [],
 };

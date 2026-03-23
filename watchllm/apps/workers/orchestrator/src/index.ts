@@ -2,6 +2,7 @@ import type { Env } from "@watchllm/types";
 import * as Sentry from "@sentry/cloudflare";
 import { nanoid } from "nanoid";
 import type { AttackCategory } from "@watchllm/types";
+import type { GraphNode } from "@watchllm/types";
 import { executeChaosRun, type ChaosRunRequest, type ChaosRunResult } from "../../chaos/src/runner";
 
 type QueueMessage =
@@ -40,6 +41,32 @@ type SimRunRow = {
 type ForkReconstruction = {
   category: AttackCategory;
   reconstructed_state: Record<string, unknown>;
+};
+
+type BranchRow = {
+  id: string;
+  agent_id: string;
+  name: string;
+  head_version_id: string | null;
+  created_at: number;
+};
+
+type VersionRow = {
+  id: string;
+  simulation_id: string;
+  parent_version_id: string | null;
+  branch_name: string;
+  commit_message: string | null;
+  diff_summary: string | null;
+  overall_severity: number | null;
+  created_at: number;
+};
+
+type GraphDiff = {
+  added_nodes: GraphNode[];
+  removed_nodes: GraphNode[];
+  changed_nodes: Array<{ before: GraphNode; after: GraphNode }>;
+  severity_delta: number;
 };
 
 const nowUnix = (): number => Math.floor(Date.now() / 1000);
@@ -103,6 +130,19 @@ function toRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function safeJsonString(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "null";
+  }
+}
+
+function parseNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return null;
+}
+
 async function gzipJson(value: unknown): Promise<ArrayBuffer> {
   const text = JSON.stringify(value);
   const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"));
@@ -134,6 +174,307 @@ async function fetchSimulationRuns(env: Env, simulationId: string): Promise<SimR
     .bind(simulationId)
     .all<SimRunRow>();
   return rows.results ?? [];
+}
+
+async function readRunGraph(
+  env: Env,
+  simulationId: string,
+  runId: string,
+  traceR2Key: string | null,
+): Promise<GraphNode[]> {
+  const key = traceR2Key ?? `traces/${simulationId}/runs/${runId}/graph.json.gz`;
+  const object = await env.TRACES.get(key);
+  if (!object) return [];
+  try {
+    const stream = object.body.pipeThrough(new DecompressionStream("gzip"));
+    const text = await new Response(stream).text();
+    const parsed = JSON.parse(text) as Record<string, unknown>;
+    const rawNodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
+    const nodes: GraphNode[] = [];
+    for (const rawNode of rawNodes) {
+      const node = toRecord(rawNode);
+      if (!node) continue;
+      if (typeof node.id !== "string") continue;
+      if (typeof node.type !== "string") continue;
+      nodes.push({
+        id: node.id,
+        parent_id: typeof node.parent_id === "string" ? node.parent_id : null,
+        type: node.type as GraphNode["type"],
+        input: node.input,
+        output: node.output,
+        timestamp: parseNumber(node.timestamp) ?? nowUnix(),
+        latency_ms: parseNumber(node.latency_ms) ?? 0,
+        tokens_used: parseNumber(node.tokens_used),
+        cost_usd: parseNumber(node.cost_usd),
+        metadata: toRecord(node.metadata) ?? {},
+      });
+    }
+    return nodes;
+  } catch {
+    return [];
+  }
+}
+
+function nodeSignature(node: GraphNode): string {
+  return `${node.type}:${safeJsonString(node.input)}`;
+}
+
+function computeGraphDiff(
+  currentNodes: GraphNode[],
+  parentNodes: GraphNode[],
+  severityDelta: number,
+): GraphDiff {
+  const currentMap = new Map<string, GraphNode>();
+  const parentMap = new Map<string, GraphNode>();
+
+  for (const node of currentNodes) {
+    const key = nodeSignature(node);
+    if (!currentMap.has(key)) currentMap.set(key, node);
+  }
+  for (const node of parentNodes) {
+    const key = nodeSignature(node);
+    if (!parentMap.has(key)) parentMap.set(key, node);
+  }
+
+  const addedNodes: GraphNode[] = [];
+  const removedNodes: GraphNode[] = [];
+  const changedNodes: Array<{ before: GraphNode; after: GraphNode }> = [];
+
+  for (const [key, current] of currentMap.entries()) {
+    const before = parentMap.get(key);
+    if (!before) {
+      addedNodes.push(current);
+      continue;
+    }
+    if (safeJsonString(before.output) !== safeJsonString(current.output)) {
+      changedNodes.push({ before, after: current });
+    }
+  }
+
+  for (const [key, parent] of parentMap.entries()) {
+    if (!currentMap.has(key)) {
+      removedNodes.push(parent);
+    }
+  }
+
+  return {
+    added_nodes: addedNodes,
+    removed_nodes: removedNodes,
+    changed_nodes: changedNodes,
+    severity_delta: Number(severityDelta.toFixed(4)),
+  };
+}
+
+function overallSeverity(runResults: ChaosRunResult[]): number {
+  if (runResults.length === 0) return 0;
+  const total = runResults.reduce((acc, run) => acc + run.severity, 0);
+  return Number((total / runResults.length).toFixed(4));
+}
+
+function formatSeverityDelta(delta: number): string {
+  const rounded = Number(delta.toFixed(4));
+  return rounded >= 0 ? `+${rounded}` : `${rounded}`;
+}
+
+function defaultForkBranchName(simulationId: string): string {
+  const suffix = simulationId.replace(/^sim_/, "").toLowerCase().slice(0, 8);
+  return `fix/${suffix || "fork"}`;
+}
+
+async function fetchBranch(
+  env: Env,
+  agentId: string,
+  branchName: string,
+): Promise<BranchRow | null> {
+  return (
+    (await env.DB.prepare(
+      `SELECT id, agent_id, name, head_version_id, created_at
+       FROM branches
+       WHERE agent_id = ? AND name = ?
+       LIMIT 1`,
+    )
+      .bind(agentId, branchName)
+      .first<BranchRow>()) ?? null
+  );
+}
+
+async function ensureBranch(
+  env: Env,
+  simulation: SimulationRow,
+  branchName: string,
+  isFork: boolean,
+): Promise<BranchRow> {
+  const existing = await fetchBranch(env, simulation.agent_id, branchName);
+  if (existing) return existing;
+
+  let initialHeadVersionId: string | null = null;
+  if (isFork) {
+    const mainBranch = await fetchBranch(env, simulation.agent_id, "main");
+    initialHeadVersionId = mainBranch?.head_version_id ?? null;
+  }
+
+  const branch: BranchRow = {
+    id: `brh_${nanoid(21)}`,
+    agent_id: simulation.agent_id,
+    name: branchName,
+    head_version_id: initialHeadVersionId,
+    created_at: nowUnix(),
+  };
+
+  await env.DB.prepare(
+    `INSERT INTO branches (id, agent_id, name, head_version_id, created_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  )
+    .bind(branch.id, branch.agent_id, branch.name, branch.head_version_id, branch.created_at)
+    .run();
+
+  return branch;
+}
+
+async function fetchVersion(env: Env, versionId: string): Promise<VersionRow | null> {
+  return (
+    (await env.DB.prepare(
+      `SELECT id, simulation_id, parent_version_id, branch_name, commit_message, diff_summary, overall_severity, created_at
+       FROM run_versions
+       WHERE id = ?
+       LIMIT 1`,
+    )
+      .bind(versionId)
+      .first<VersionRow>()) ?? null
+  );
+}
+
+async function primaryRunForSimulation(
+  env: Env,
+  simulationId: string,
+): Promise<{ id: string; trace_r2_key: string | null } | null> {
+  return (
+    (await env.DB.prepare(
+      `SELECT id, trace_r2_key
+       FROM sim_runs
+       WHERE simulation_id = ?
+       ORDER BY COALESCE(severity, -1) DESC, created_at ASC
+       LIMIT 1`,
+    )
+      .bind(simulationId)
+      .first<{ id: string; trace_r2_key: string | null }>()) ?? null
+  );
+}
+
+async function selectCurrentPrimaryRun(
+  env: Env,
+  simulationId: string,
+  runResults: ChaosRunResult[],
+): Promise<{ id: string; trace_r2_key: string | null } | null> {
+  if (runResults.length > 0) {
+    let top = runResults[0];
+    for (const run of runResults) {
+      if (run.severity > top.severity) top = run;
+    }
+    return {
+      id: top.run_id,
+      trace_r2_key: top.trace_r2_key,
+    };
+  }
+  return primaryRunForSimulation(env, simulationId);
+}
+
+function parseBranchNameFromConfig(configJson: string): string | null {
+  try {
+    const parsed = JSON.parse(configJson) as Record<string, unknown>;
+    const branch = parsed.branch_name;
+    if (typeof branch === "string" && branch.trim()) {
+      return branch.trim();
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function autoVersionSimulation(
+  env: Env,
+  simulation: SimulationRow,
+  runResults: ChaosRunResult[],
+  options: { isFork: boolean },
+): Promise<void> {
+  const branchName = options.isFork
+    ? parseBranchNameFromConfig(simulation.config_json) ?? defaultForkBranchName(simulation.id)
+    : "main";
+
+  const branch = await ensureBranch(env, simulation, branchName, options.isFork);
+  const parentVersionId = branch.head_version_id;
+  const parentVersion = parentVersionId ? await fetchVersion(env, parentVersionId) : null;
+
+  const currentPrimaryRun = await selectCurrentPrimaryRun(env, simulation.id, runResults);
+  const currentNodes = currentPrimaryRun
+    ? await readRunGraph(env, simulation.id, currentPrimaryRun.id, currentPrimaryRun.trace_r2_key)
+    : [];
+
+  let parentNodes: GraphNode[] = [];
+  let parentSeverity = 0;
+  if (parentVersion) {
+    parentSeverity = parentVersion.overall_severity ?? 0;
+    const parentPrimaryRun = await primaryRunForSimulation(env, parentVersion.simulation_id);
+    if (parentPrimaryRun) {
+      parentNodes = await readRunGraph(
+        env,
+        parentVersion.simulation_id,
+        parentPrimaryRun.id,
+        parentPrimaryRun.trace_r2_key,
+      );
+    }
+  }
+
+  const currentSeverity = overallSeverity(runResults);
+  const severityDelta = currentSeverity - parentSeverity;
+  const diff = computeGraphDiff(currentNodes, parentNodes, severityDelta);
+
+  const versionId = `ver_${nanoid(21)}`;
+  const diffKey = `traces/${simulation.agent_id}/versions/${versionId}/diff.json.gz`;
+  const diffPayload = {
+    added_nodes: diff.added_nodes,
+    removed_nodes: diff.removed_nodes,
+    changed_nodes: diff.changed_nodes,
+    severity_delta: diff.severity_delta,
+  };
+  const compressedDiff = await gzipJson(diffPayload);
+  await env.TRACES.put(diffKey, compressedDiff, {
+    httpMetadata: {
+      contentType: "application/json",
+      contentEncoding: "gzip",
+    },
+  });
+
+  const categoryCount = runResults.length;
+  const commitMessage = `Run ${categoryCount} categories, severity ${currentSeverity} (${formatSeverityDelta(diff.severity_delta)})`;
+  const diffSummary = {
+    added_count: diff.added_nodes.length,
+    removed_count: diff.removed_nodes.length,
+    changed_count: diff.changed_nodes.length,
+    severity_delta: diff.severity_delta,
+    diff_r2_key: diffKey,
+    branch_name: branchName,
+    compared_run_id: currentPrimaryRun?.id ?? null,
+  };
+
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO run_versions
+       (id, simulation_id, parent_version_id, branch_name, commit_message, diff_summary, overall_severity, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      versionId,
+      simulation.id,
+      parentVersionId,
+      branchName,
+      commitMessage,
+      JSON.stringify(diffSummary),
+      currentSeverity,
+      nowUnix(),
+    ),
+    env.DB.prepare("UPDATE branches SET head_version_id = ? WHERE id = ?").bind(versionId, branch.id),
+  ]);
 }
 
 async function dispatchChaos(env: Env, payload: ChaosRunRequest): Promise<ChaosRunResult> {
@@ -287,6 +628,7 @@ async function runSimulation(env: Env, simulationId: string): Promise<void> {
   }
 
   const summaryKey = await writeSimulationSummary(env, simulation, results, startedAt);
+  await autoVersionSimulation(env, simulation, results, { isFork: false });
   await env.DB.prepare(
     `UPDATE simulations
      SET status = 'completed', summary_r2_key = ?, completed_at = ?
@@ -396,6 +738,7 @@ async function runFork(env: Env, message: Extract<QueueMessage, { type: "fork" }
     .run();
 
   const summaryKey = await writeSimulationSummary(env, simulation, [result], createdAt);
+  await autoVersionSimulation(env, simulation, [result], { isFork: true });
   await env.DB.prepare(
     `UPDATE simulations
      SET status = 'completed', summary_r2_key = ?, completed_at = ?

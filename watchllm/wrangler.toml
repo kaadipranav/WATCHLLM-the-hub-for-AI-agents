@@ -9,7 +9,7 @@ enabled = true
 [[d1_databases]]
 binding = "DB"
 database_name = "watchllm-db"
-database_id = "REPLACE_WITH_ACTUAL_ID"
+database_id = "bad428dd-eaa0-4878-a007-f816fab89382"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
@@ -18,7 +18,7 @@ bucket_name = "watchllm-traces"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_ACTUAL_ID"
+id = "1a7d68c963294ea59d7b553a68be55c4"
 
 [[queues.producers]]
 binding = "SIMULATION_QUEUE"
