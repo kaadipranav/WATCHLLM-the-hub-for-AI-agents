@@ -25,7 +25,7 @@ binding = "SIMULATION_QUEUE"
 queue = "watchllm-simulations"
 
 [vars]
-APP_URL = "http://localhost:3000"
+APP_URL = "https://watchllm.dev"
 
 [env.orchestrator]
 name = "watchllm-orchestrator"
@@ -34,7 +34,7 @@ main = "apps/workers/orchestrator/src/index.ts"
 [[env.orchestrator.d1_databases]]
 binding = "DB"
 database_name = "watchllm-db"
-database_id = "REPLACE_WITH_ACTUAL_ID"
+database_id = "bad428dd-eaa0-4878-a007-f816fab89382"
 migrations_dir = "migrations"
 
 [[env.orchestrator.r2_buckets]]
@@ -43,7 +43,7 @@ bucket_name = "watchllm-traces"
 
 [[env.orchestrator.kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_ACTUAL_ID"
+id = "1a7d68c963294ea59d7b553a68be55c4"
 
 [[env.orchestrator.queues.consumers]]
 queue = "watchllm-simulations"
@@ -60,11 +60,12 @@ CHAOS_WORKER_URL = ""
 [env.chaos]
 name = "watchllm-chaos"
 main = "apps/workers/chaos/src/index.ts"
+ai = {}
 
 [[env.chaos.d1_databases]]
 binding = "DB"
 database_name = "watchllm-db"
-database_id = "REPLACE_WITH_ACTUAL_ID"
+database_id = "bad428dd-eaa0-4878-a007-f816fab89382"
 migrations_dir = "migrations"
 
 [[env.chaos.r2_buckets]]
@@ -73,7 +74,4 @@ bucket_name = "watchllm-traces"
 
 [[env.chaos.kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_ACTUAL_ID"
-
-[env.chaos.ai]
-binding = "AI"
+id = "1a7d68c963294ea59d7b553a68be55c4"
