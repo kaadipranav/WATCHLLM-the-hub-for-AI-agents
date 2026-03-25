@@ -1,10 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 export default function SimulationMockTerminal() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const rows = [
     "[✓] prompt_injection    severity: 0.82  FAILED",
     "[✓] tool_abuse          severity: 0.21  passed",
     "[✓] role_confusion      severity: 0.08  passed",
     "[...] hallucination     running...",
   ];
+
+  if (!mounted) return null;
 
   return (
     <div className="w-full max-w-4xl text-left bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl shadow-accent/5 font-mono text-sm">
