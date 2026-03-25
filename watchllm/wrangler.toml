@@ -60,7 +60,9 @@ CHAOS_WORKER_URL = ""
 [env.chaos]
 name = "watchllm-chaos"
 main = "apps/workers/chaos/src/index.ts"
-ai = {}
+
+[env.chaos.vars]
+APP_URL = "https://watchllm.dev"
 
 [[env.chaos.d1_databases]]
 binding = "DB"

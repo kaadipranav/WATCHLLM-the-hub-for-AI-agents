@@ -9,7 +9,7 @@
     "dev:web": "pnpm --filter @watchllm/web dev",
     "dev:api": "pnpm build:types && wrangler dev",
     "deploy:web": "pnpm --filter @watchllm/web build",
-    "deploy:workers": "wrangler deploy && wrangler deploy --env orchestrator && wrangler deploy --env chaos",
+    "deploy:workers": "wrangler deploy && wrangler deploy --env chaos && wrangler deploy --env orchestrator",
     "db:migrate:local": "wrangler d1 migrations apply watchllm-db --local",
     "db:migrate:prod": "wrangler d1 migrations apply watchllm-db --remote",
     "db:studio": "wrangler d1 studio watchllm-db",
