@@ -21,15 +21,16 @@ export default function AgentHistoryPage() {
   const branches = useSWR(`/api/v1/agents/${agentId}/branches`, (url: string) => apiGet<Branch[]>(url));
   const versions = useSWR(`/api/v1/agents/${agentId}/versions?branch=${branch}`, (url: string) => apiGet<VersionItem[]>(url));
 
-  const rows = versions.data ?? [];
   const withDelta = useMemo(
-    () =>
-      rows.map((row, index) => {
+    () => {
+      const rows = versions.data ?? [];
+      return rows.map((row, index) => {
         const prev = rows[index + 1];
         const delta = row.severity !== null && prev?.severity !== null ? row.severity - prev.severity : null;
         return { ...row, delta };
-      }),
-    [rows],
+      });
+    },
+    [versions.data],
   );
 
   return (

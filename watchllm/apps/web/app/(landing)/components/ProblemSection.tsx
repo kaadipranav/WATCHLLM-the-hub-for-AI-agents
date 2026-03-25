@@ -9,7 +9,7 @@ export default function ProblemSection() {
             </svg>
           </div>
           <h3 className="text-xl font-semibold text-white">Agents fail silently</h3>
-          <p className="text-gray-400">LLM agents fail in unpredicted ways. By the time users report it, you've already lost trust.</p>
+          <p className="text-gray-400">LLM agents fail in unpredicted ways. By the time users report it, you&apos;ve already lost trust.</p>
         </div>
         
         <div className="flex flex-col gap-4">
@@ -18,8 +18,8 @@ export default function ProblemSection() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-white">Logs don't replay</h3>
-          <p className="text-gray-400">Reading a linear log of LLM calls isn't enough. You need to visualize the execution graph and replay it.</p>
+          <h3 className="text-xl font-semibold text-white">Logs don&apos;t replay</h3>
+          <p className="text-gray-400">Reading a linear log of LLM calls isn&apos;t enough. You need to visualize the execution graph and replay it.</p>
         </div>
 
         <div className="flex flex-col gap-4">

@@ -21,14 +21,14 @@ export default function FeaturesSection() {
         </div>
         <div>
           <h2 className="text-3xl font-bold text-white mb-4">Execution Graph Replay</h2>
-          <p className="text-gray-400 text-lg">Don't guess where it broke. Replay the exact execution trace node-by-node. See every LLM decision, latency penalty, and tool call payload.</p>
+          <p className="text-gray-400 text-lg">Don&apos;t guess where it broke. Replay the exact execution trace node-by-node. See every LLM decision, latency penalty, and tool call payload.</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-16 items-center">
         <div>
           <h2 className="text-3xl font-bold text-white mb-4">Time-Travel Forking</h2>
-          <p className="text-gray-400 text-lg">Found the failure node? Don't restart the whole agent. Edit the prompt or the tool output right at that step and branch the execution state.</p>
+          <p className="text-gray-400 text-lg">Found the failure node? Don&apos;t restart the whole agent. Edit the prompt or the tool output right at that step and branch the execution state.</p>
         </div>
         <div className="aspect-video">
           <ForkReplayVisual />
