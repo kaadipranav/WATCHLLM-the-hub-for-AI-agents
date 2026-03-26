@@ -1,20 +1,24 @@
 "use client";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { IconAlertTriangle } from "@tabler/icons-react";
+import { IconBug, IconRewindBackward5, IconCurrencyDollar } from "@tabler/icons-react";
+import GlowingCard from "../reactbits/GlowingCard";
 
-const problems = [
+const cards = [
   {
-    before: "Eval frameworks test happy paths",
-    after: "WatchLLM simulates adversarial scenarios your users will actually hit",
+    icon: IconBug,
+    title: "Agents fail silently",
+    body: "You find out when a user complains. By then the damage is done.",
   },
   {
-    before: "Logs are flat JSON you grep through at 3am",
-    after: "Graph replay traces every tool call, branching decision, and failure mode",
+    icon: IconRewindBackward5,
+    title: "Logs don't replay",
+    body: "You see the crash. You can't wind back to what caused it.",
   },
   {
-    before: "Version pinning only tells you what model changed",
-    after: "Behavioral diffs show you which user flows actually regressed",
+    icon: IconCurrencyDollar,
+    title: "Debugging burns money",
+    body: "Every debug attempt reruns the whole agent. API costs stack up fast.",
   },
 ];
 
@@ -26,107 +30,45 @@ export default function Problem() {
     <section
       ref={ref}
       className="relative flex flex-col items-center px-6"
-      style={{ paddingTop: 100, paddingBottom: 100, background: "#060608" }}
+      style={{ paddingTop: 120, paddingBottom: 120, background: "#060608" }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex items-center gap-2 mb-5"
-      >
-        <IconAlertTriangle size={16} style={{ color: "#FF4444" }} />
-        <span
-          style={{
-            fontSize: 13,
-            color: "#FF4444",
-            fontWeight: 500,
-            letterSpacing: "0.03em",
-            fontFamily: "var(--font-geist-mono, monospace)",
-          }}
-        >
-          THE PROBLEM
-        </span>
-      </motion.div>
+      <span style={{ fontSize: 11, color: "#00C896", letterSpacing: "0.12em", fontWeight: 500 }}>THE PROBLEM</span>
 
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-        className="text-center"
+        className="text-center mt-4"
         style={{
-          fontSize: "clamp(28px, 3vw, 40px)",
+          fontSize: "clamp(34px, 4vw, 48px)",
           fontWeight: 600,
           color: "#EDEDED",
           lineHeight: 1.15,
           letterSpacing: "-0.02em",
-          maxWidth: 540,
         }}
       >
-        Agents fail silently.
+        Agents work fine in dev.
         <br />
-        You find out from users.
+        Production is a different story.
       </motion.h2>
 
-      <div
-        className="mt-14 flex flex-col gap-4 w-full"
-        style={{ maxWidth: 700 }}
-      >
-        {problems.map((p, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-16 w-full" style={{ maxWidth: 900 }}>
+        {cards.map((card, i) => (
           <motion.div
-            key={i}
+            key={card.title}
             initial={{ opacity: 0, y: 14 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.4, delay: 0.2 + i * 0.12, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row"
-            style={{
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.06)",
-              overflow: "hidden",
-            }}
           >
-            {/* Before */}
-            <div
-              className="flex-1 px-5 py-4"
-              style={{ background: "rgba(255,68,68,0.03)" }}
+            <GlowingCard
+              className="rounded-[10px] p-5 min-h-[210px]"
+              glowColor="rgba(0,200,150,0.15)"
+              borderColor="rgba(255,255,255,0.08)"
             >
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "#FF4444",
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  fontFamily: "var(--font-geist-mono, monospace)",
-                }}
-              >
-                BEFORE
-              </span>
-              <p style={{ fontSize: 14, color: "#666672", marginTop: 6, lineHeight: 1.6 }}>
-                {p.before}
-              </p>
-            </div>
-            {/* After */}
-            <div
-              className="flex-1 px-5 py-4"
-              style={{
-                background: "rgba(0,200,150,0.03)",
-                borderLeft: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "#00C896",
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  fontFamily: "var(--font-geist-mono, monospace)",
-                }}
-              >
-                AFTER
-              </span>
-              <p style={{ fontSize: 14, color: "#EDEDED", marginTop: 6, lineHeight: 1.6 }}>
-                {p.after}
-              </p>
-            </div>
+              <card.icon size={24} style={{ color: "#00C896" }} />
+              <h3 style={{ fontSize: 16, fontWeight: 500, color: "#EDEDED", marginTop: 12 }}>{card.title}</h3>
+              <p style={{ fontSize: 14, color: "#666672", lineHeight: 1.6, marginTop: 8 }}>{card.body}</p>
+            </GlowingCard>
           </motion.div>
         ))}
       </div>

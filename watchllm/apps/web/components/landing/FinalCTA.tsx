@@ -13,8 +13,8 @@ export default function FinalCTA() {
       ref={ref}
       className="flex flex-col items-center px-6"
       style={{
-        paddingTop: 100,
-        paddingBottom: 100,
+        paddingTop: 120,
+        paddingBottom: 120,
         background: "linear-gradient(180deg, #060608 0%, rgba(0,200,150,0.03) 50%, #060608 100%)",
       }}
     >
@@ -29,12 +29,10 @@ export default function FinalCTA() {
           color: "#EDEDED",
           lineHeight: 1.15,
           letterSpacing: "-0.03em",
-          maxWidth: 520,
+          maxWidth: 600,
         }}
       >
-        Stop guessing.
-        <br />
-        Start stress testing.
+        Your agent is one bad run away from a production incident.
       </motion.h2>
       <motion.p
         initial={{ opacity: 0 }}
@@ -43,7 +41,7 @@ export default function FinalCTA() {
         className="text-center mt-5"
         style={{ fontSize: 15, color: "#666672", maxWidth: 400, lineHeight: 1.6 }}
       >
-        Free tier. No credit card. Deploy your first simulation in 5 minutes.
+        Find out what it does under pressure before your users do.
       </motion.p>
 
       <motion.div
@@ -54,7 +52,7 @@ export default function FinalCTA() {
       >
         <Magnet padding={50} magnetStrength={3}>
           <Link
-            href="/api/v1/auth/signin/github"
+            href="/sign-up"
             className="inline-flex items-center justify-center font-medium transition-all duration-200 hover:brightness-110 hover:scale-[1.03]"
             style={{
               height: 48,
@@ -65,10 +63,10 @@ export default function FinalCTA() {
               color: "#060608",
               fontSize: 16,
               fontWeight: 500,
-              boxShadow: "0 0 40px rgba(0,200,150,0.15)",
+              boxShadow: "0 0 32px rgba(0,200,150,0.16)",
             }}
           >
-            Get started free →
+            Start testing free — it takes 5 minutes
           </Link>
         </Magnet>
       </motion.div>

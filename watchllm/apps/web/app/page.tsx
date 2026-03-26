@@ -22,8 +22,8 @@ export default function HomePage() {
         <Metrics />
         <Pricing />
         <FinalCTA />
+        <Footer />
       </main>
-      <Footer />
     </div>
   );
 }

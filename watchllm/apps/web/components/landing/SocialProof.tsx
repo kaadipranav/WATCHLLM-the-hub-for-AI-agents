@@ -15,21 +15,11 @@ export default function SocialProof() {
           Trusted by engineers building on:
         </span>
         {logos.map((name, i) => (
-          <span key={name} className="flex items-center gap-5 md:gap-8">
+          <span key={name} className="flex items-center gap-5 md:gap-8" style={{ fontFamily: "var(--font-geist-mono, monospace)" }}>
             {i > 0 && (
-              <span
-                className="hidden md:inline-block"
-                style={{ width: 1, height: 16, background: "rgba(255,255,255,0.06)" }}
-              />
+              <span className="hidden md:inline-block" style={{ width: 1, height: 16, background: "rgba(255,255,255,0.06)" }} />
             )}
-            <span
-              style={{
-                fontSize: 13,
-                color: "#333338",
-                fontWeight: 500,
-                fontFamily: "var(--font-geist-mono, monospace)",
-              }}
-            >
+            <span style={{ fontSize: 13, color: "#333338", fontWeight: 500 }}>
               {name}
             </span>
           </span>

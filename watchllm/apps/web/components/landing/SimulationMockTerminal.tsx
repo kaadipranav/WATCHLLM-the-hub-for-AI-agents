@@ -1,44 +1,19 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import AnimatedList from "../reactbits/AnimatedList";
 
-type RowStatus = "critical" | "failed" | "pass" | "running" | "queued";
-
-interface SimRow {
-  icon: string;
-  category: string;
-  bars: string | null;
-  score: string | null;
-  badge: string;
-  status: RowStatus;
-}
-
-const rows: SimRow[] = [
-  { icon: "✗", category: "prompt_injection", bars: "████████░░", score: "0.82", badge: "CRITICAL", status: "critical" },
-  { icon: "✓", category: "tool_abuse", bars: "██░░░░░░░░", score: "0.21", badge: "pass", status: "pass" },
-  { icon: "✗", category: "hallucination", bars: "██████░░░░", score: "0.61", badge: "FAILED", status: "failed" },
-  { icon: "✓", category: "context_poisoning", bars: "█░░░░░░░░░", score: "0.14", badge: "pass", status: "pass" },
-  { icon: "●", category: "infinite_loop", bars: null, score: null, badge: "running...", status: "running" },
-  { icon: "·", category: "jailbreak", bars: null, score: null, badge: "queued", status: "queued" },
-  { icon: "·", category: "data_exfil", bars: null, score: null, badge: "queued", status: "queued" },
-  { icon: "·", category: "role_confusion", bars: null, score: null, badge: "queued", status: "queued" },
+const rows = [
+  "✗  prompt_injection    ████████░░  0.82   [CRITICAL]",
+  "✓  tool_abuse          ██░░░░░░░░  0.21   [pass]",
+  "✗  hallucination       ██████░░░░  0.61   [FAILED]",
+  "✓  context_poisoning   █░░░░░░░░░  0.14   [pass]",
+  "●  infinite_loop                           [running...]",
+  "·  jailbreak                               [queued]",
+  "·  data_exfil                              [queued]",
+  "·  role_confusion                          [queued]",
 ];
 
-const statusColor: Record<RowStatus, string> = {
-  critical: "#FF4444",
-  failed: "#FF4444",
-  pass: "#00C896",
-  running: "#F59E0B",
-  queued: "#333338",
-};
-
-const badgeBg: Record<RowStatus, string> = {
-  critical: "rgba(255,68,68,0.12)",
-  failed: "rgba(255,68,68,0.12)",
-  pass: "rgba(0,200,150,0.1)",
-  running: "rgba(245,158,11,0.1)",
-  queued: "rgba(51,51,56,0.2)",
-};
 
 function CostTicker() {
   const [cost, setCost] = useState(0.0043);
@@ -57,18 +32,6 @@ function CostTicker() {
 export default function SimulationMockTerminal() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.3 });
-  const [visibleRows, setVisibleRows] = useState(0);
-
-  useEffect(() => {
-    if (!inView) return;
-    let i = 0;
-    const interval = setInterval(() => {
-      i += 1;
-      setVisibleRows(i);
-      if (i >= rows.length) clearInterval(interval);
-    }, 350);
-    return () => clearInterval(interval);
-  }, [inView]);
 
   return (
     <motion.div
@@ -104,61 +67,31 @@ export default function SimulationMockTerminal() {
         </span>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: 16, minHeight: 220 }}>
-        {rows.map((row, idx) => (
-          <div
-            key={row.category}
-            className="flex items-center gap-3"
-            style={{
-              fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
-              fontSize: 13,
-              lineHeight: "1.8",
-              opacity: idx < visibleRows ? 1 : 0,
-              transform: idx < visibleRows ? "translateY(0)" : "translateY(4px)",
-              transition: "opacity 0.3s ease, transform 0.3s ease",
-            }}
-          >
-            <span style={{ color: statusColor[row.status], width: 16, textAlign: "center" }}>
-              {row.status === "running" ? (
-                <span className="inline-block animate-pulse">{row.icon}</span>
-              ) : (
-                row.icon
-              )}
-            </span>
-            <span style={{ color: "#EDEDED", width: 160, whiteSpace: "nowrap" }}>
-              {row.category}
-            </span>
-            {row.bars ? (
-              <>
-                <span style={{ color: row.status === "pass" ? "#00C896" : "#FF4444", letterSpacing: 1 }}>
-                  {row.bars.split("").map((char, ci) => (
-                    <span key={ci} style={{ color: char === "░" ? "#1a1a1f" : undefined }}>
-                      {char}
-                    </span>
-                  ))}
-                </span>
-                <span style={{ color: "#666672", width: 36, textAlign: "right" }}>{row.score}</span>
-              </>
-            ) : (
-              <span style={{ flex: 1 }} />
-            )}
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded-full"
-              style={{
-                fontSize: 11,
-                color: statusColor[row.status],
-                background: badgeBg[row.status],
-                border: `1px solid ${statusColor[row.status]}20`,
-              }}
-            >
-              {row.badge}
-              {row.status === "running" && (
-                <span className="ml-1 inline-block w-1 h-3 animate-pulse" style={{ background: "#F59E0B" }} />
-              )}
-            </span>
-          </div>
-        ))}
+      <div style={{ padding: 16, minHeight: 255 }}>
+        <AnimatedList
+          items={rows}
+          showGradients={false}
+          displayScrollbar={false}
+          enableArrowNavigation={false}
+          className="!w-full"
+          itemClassName="!p-0 !bg-transparent !rounded-none"
+        />
+
+        <div className="absolute inset-x-0" style={{ top: 58, paddingLeft: 30, paddingRight: 30, pointerEvents: "none" }}>
+          {rows.map((r, i) => {
+            let color = "#333338";
+            if (r.startsWith("✗")) color = "#FF4444";
+            if (r.startsWith("✓")) color = "#00C896";
+            if (r.startsWith("●")) color = "#F59E0B";
+            return (
+              <div key={r} style={{ height: 30.4, fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)", fontSize: 13, lineHeight: "30.4px", color: "#666672" }}>
+                <span style={{ color }}>{r[0]}</span>
+                <span>{r.slice(1)}</span>
+                {i === 4 && <span style={{ display: "inline-block", width: 8, marginLeft: 3, height: 14, background: "#F59E0B", animation: "blink-cursor 1s steps(2, end) infinite", verticalAlign: "middle" }} />}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Footer */}
