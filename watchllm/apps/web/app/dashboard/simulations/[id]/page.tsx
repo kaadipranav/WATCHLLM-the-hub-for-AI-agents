@@ -1,5 +1,6 @@
-export const runtime = 'edge';
 "use client";
+export const runtime = 'edge';
+export const runtime = 'edge';
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";

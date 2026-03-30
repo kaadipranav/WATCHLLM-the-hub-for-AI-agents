@@ -1,5 +1,6 @@
-export const runtime = 'edge';
 "use client";
+export const runtime = 'edge';
+export const runtime = 'edge';
 
 import { useParams } from "next/navigation";
 import useSWR from "swr";
