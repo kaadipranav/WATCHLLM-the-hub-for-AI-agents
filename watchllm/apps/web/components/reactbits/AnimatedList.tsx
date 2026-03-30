@@ -1,4 +1,6 @@
+"use client";
 import React, { useRef, useState, useEffect, useCallback, ReactNode, MouseEventHandler, UIEvent } from 'react';
+
 import { motion, useInView } from 'framer-motion';
 
 interface AnimatedItemProps {

@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+
 import { IconBrandGithub, IconBrandX } from "@tabler/icons-react";
 
 const NAV_COLS = [

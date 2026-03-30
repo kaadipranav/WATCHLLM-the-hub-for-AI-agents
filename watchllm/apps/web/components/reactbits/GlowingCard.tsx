@@ -1,4 +1,6 @@
+"use client";
 import React, { useRef, useState } from 'react';
+
 
 interface Position {
   x: number;
