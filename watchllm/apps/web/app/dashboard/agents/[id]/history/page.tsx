@@ -1,2 +1,89 @@
 export const runtime = 'edge';
-import Link from "next/link"; import { headers } from "next/headers"; import type { Agent, ApiEnvelope, SimulationListPayload, SimulationStatusPayload } from "@/lib/api"; import { StatusBadge } from "./components/StatusBadge";  function requestOrigin(): string {   const h = headers();   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";   const proto = h.get("x-forwarded-proto") ?? "http";   return `${proto}://${host}`; }  async function getJson<T>(path: string): Promise<T | null> {   const response = await fetch(`${requestOrigin()}${path}`, {     cache: "no-store",     headers: {       cookie: headers().get("cookie") ?? "",     },   });   if (!response.ok) return null;   const payload = (await response.json()) as ApiEnvelope<T>;   return payload.data; }  export default async function DashboardOverviewPage() {   const simulations = await getJson<SimulationListPayload>("/api/v1/simulations?limit=5");   const agents = await getJson<Agent[]>("/api/v1/agents");   const latestSimulation = simulations?.items?.[0];   const latestStatus = latestSimulation     ? await getJson<SimulationStatusPayload>(`/api/v1/simulations/${latestSimulation.id}/status`)     : null;    const items = simulations?.items ?? [];   const failedCount = items.filter((item) => item.status === "failed").length;   const completionCount = latestStatus?.completed_runs ?? 0;   const totalRuns = latestStatus?.total_runs ?? 0;    return (     <div className="text-white">       <div className="flex justify-between items-center mb-8">         <h1 className="text-2xl font-bold">Overview</h1>         <Link href="/dashboard/simulations/new" className="bg-accent text-black px-4 py-2 rounded-lg font-medium hover:bg-accent/90 transition">           Run a simulation         </Link>       </div>              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">         {[           { label: "Total Simulations", value: `${simulations?.total ?? 0}`, sub: "all time" },           { label: "Total Failures Found", value: `${failedCount}`, sub: "completed runs" },           {             label: "Avg Severity",             value: `${latestStatus?.severity_by_category ? (               Object.values(latestStatus.severity_by_category).reduce((sum, s) => sum + s, 0) /               Math.max(Object.values(latestStatus.severity_by_category).length, 1)             ).toFixed(2) : "0.00"}`,             sub: "last simulation",           },           { label: "Simulations This Month", value: `${completionCount}/${Math.max(totalRuns, 5)}`, sub: "vs tier limit" },         ].map((stat, i) => (           <div key={i} className="bg-[#111] p-6 rounded-xl border border-white/5">             <div className="text-gray-400 text-sm mb-2">{stat.label}</div>             <div className="text-3xl font-mono text-white mb-1">{stat.value}</div>             <div className="text-xs text-gray-500">{stat.sub}</div>           </div>         ))}       </div>              <h2 className="text-xl font-semibold mb-4">Recent Simulations</h2>       <div className="bg-[#111] rounded-xl border border-white/5 overflow-hidden">         <table className="w-full text-left text-sm">           <thead className="bg-[#0a0a0a] text-gray-400 border-b border-white/5">             <tr>               <th className="px-6 py-3 font-medium">Agent</th>               <th className="px-6 py-3 font-medium">Status</th>               <th className="px-6 py-3 font-medium">Date</th>               <th className="px-6 py-3 font-medium">Severity</th>             </tr>           </thead>           <tbody className="divide-y divide-white/5">             {items.length === 0 ? (               <tr>                 <td className="px-6 py-8 text-gray-500" colSpan={4}>                   No simulations yet.                 </td>               </tr>             ) : (               items.map((simulation) => {                 const agentName = agents?.find((a) => a.id === simulation.agent_id)?.name ?? simulation.agent_id;                 return (                   <tr key={simulation.id} className="hover:bg-white/[0.02] transition">                     <td className="px-6 py-4 font-mono text-gray-300">{agentName}</td>                     <td className="px-6 py-4">                       <StatusBadge status={simulation.status} />                     </td>                     <td className="px-6 py-4 text-gray-500">{new Date(simulation.created_at * 1000).toLocaleString()}</td>                     <td className="px-6 py-4">                       <span className="font-mono text-gray-300">-</span>                     </td>                   </tr>                 );               })             )}           </tbody>         </table>       </div>     </div>   ); }
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
+import { useParams } from "next/navigation";
+import { apiGet, type VersionItem } from "@/lib/api";
+
+type Branch = {
+  id: string;
+  name: string;
+  head_version_id: string | null;
+  created_at: number;
+};
+
+export default function AgentHistoryPage() {
+  const params = useParams<{ id: string }>();
+  const agentId = params.id;
+
+  const [branch, setBranch] = useState("main");
+  const branches = useSWR(`/api/v1/agents/${agentId}/branches`, (url: string) => apiGet<Branch[]>(url));
+  const versions = useSWR(`/api/v1/agents/${agentId}/versions?branch=${branch}`, (url: string) => apiGet<VersionItem[]>(url));
+
+  const withDelta = useMemo(
+    () => {
+      const rows = versions.data ?? [];
+      return rows.map((row, index) => {
+        const prev = rows[index + 1];
+        const delta = row.severity !== null && prev?.severity !== null ? row.severity - prev.severity : null;
+        return { ...row, delta };
+      });
+    },
+    [versions.data],
+  );
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Version history</h1>
+        <select value={branch} onChange={(event) => setBranch(event.target.value)} className="rounded border border-white/10 bg-[#111] px-3 py-2 text-sm">
+          {(branches.data ?? []).map((item) => (
+            <option key={item.id} value={item.name}>
+              {item.name}
+            </option>
+          ))}
+          {!branches.data?.length ? <option value="main">main</option> : null}
+        </select>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-white/5 bg-[#111]">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-[#0b0b0b] text-gray-400">
+            <tr>
+              <th className="px-4 py-3">Commit</th>
+              <th className="px-4 py-3">Message</th>
+              <th className="px-4 py-3">Severity delta</th>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {withDelta.map((row) => (
+              <tr key={row.id}>
+                <td className="px-4 py-3 font-mono text-xs">{row.id.slice(0, 7)}</td>
+                <td className="px-4 py-3 text-xs text-gray-300">{row.commit_message ?? "No message"}</td>
+                <td className="px-4 py-3 text-xs">
+                  {row.delta === null ? (
+                    <span className="text-gray-400">-</span>
+                  ) : row.delta < 0 ? (
+                    <span className="font-mono text-emerald-300">{row.delta.toFixed(2)}</span>
+                  ) : (
+                    <span className="font-mono text-red-300">+{row.delta.toFixed(2)}</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs text-gray-500">{new Date(row.created_at * 1000).toLocaleString()}</td>
+                <td className="px-4 py-3 text-xs">
+                  <Link href={`/dashboard/agents/${agentId}/versions/${row.id}/diff`} className="text-accent hover:underline">
+                    View diff
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
