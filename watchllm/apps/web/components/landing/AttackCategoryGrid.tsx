@@ -1,88 +1,77 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-type State = "queued" | "active" | "passed" | "failed";
 
-const items = [
-  "prompt_injection",
-  "tool_abuse",
-  "hallucination",
-  "context_poisoning",
-  "infinite_loop",
-  "jailbreak",
-  "data_exfil",
-  "role_confusion",
+type PillState = "queued" | "scanning" | "passed" | "failed";
+
+const CATEGORIES = [
+  { id: "prompt_injection", alwaysFails: true },
+  { id: "tool_abuse", alwaysFails: false },
+  { id: "hallucination", alwaysFails: true },
+  { id: "context_poisoning", alwaysFails: false },
+  { id: "infinite_loop", alwaysFails: true },
+  { id: "jailbreak", alwaysFails: false },
+  { id: "data_exfiltration", alwaysFails: false },
+  { id: "role_confusion", alwaysFails: false },
 ];
 
-const failed = new Set(["prompt_injection", "hallucination", "infinite_loop"]);
-
-function stylesFor(state: State) {
-  if (state === "failed") {
-    return {
-      borderColor: "#FF4444",
-      color: "#FF4444",
-      background: "rgba(255,68,68,0.06)",
-    };
-  }
-  if (state === "active") {
-    return {
-      borderColor: "#00C896",
-      color: "#EDEDED",
-      background: "rgba(0,200,150,0.06)",
-    };
-  }
-  if (state === "passed") {
-    return {
-      borderColor: "rgba(0,200,150,0.22)",
-      color: "#00C896",
-      background: "rgba(0,200,150,0.03)",
-    };
-  }
-  return {
-    borderColor: "rgba(255,255,255,0.08)",
-    color: "#666672",
-    background: "transparent",
+const pillStyle = (state: PillState): React.CSSProperties => {
+  const base: React.CSSProperties = {
+    borderRadius: 6,
+    padding: "8px 14px",
+    fontFamily: "var(--font-geist-mono, monospace)",
+    fontSize: 12,
+    border: "1px solid",
+    transition: "all 300ms ease",
+    display: "inline-block",
+    whiteSpace: "nowrap",
   };
-}
+  if (state === "queued")   return { ...base, background: "transparent", borderColor: "rgba(255,255,255,0.07)", color: "#333338" };
+  if (state === "scanning") return { ...base, background: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.2)", color: "#F59E0B" };
+  if (state === "passed")   return { ...base, background: "rgba(0,200,150,0.06)", borderColor: "rgba(0,200,150,0.2)", color: "#00C896" };
+  return                           { ...base, background: "rgba(255,68,68,0.06)", borderColor: "rgba(255,68,68,0.25)", color: "#FF4444" };
+};
 
-export default function AttackCategoryGrid() {
-  const [phase, setPhase] = useState(0);
+export function AttackCategoryGrid() {
+  const [states, setStates] = useState<PillState[]>(CATEGORIES.map(() => "queued"));
+  const currentRef = useRef(0);
+  const phaseRef = useRef<"scanning" | "result">("scanning");
 
   useEffect(() => {
-    const id = setInterval(() => setPhase((p) => (p + 1) % 3), 4000);
-    return () => clearInterval(id);
+    const tick = () => {
+      const idx = currentRef.current;
+      if (idx >= CATEGORIES.length) {
+        // Reset after 2s pause
+        setTimeout(() => {
+          setStates(CATEGORIES.map(() => "queued"));
+          currentRef.current = 0;
+          phaseRef.current = "scanning";
+        }, 2000);
+        return;
+      }
+
+      if (phaseRef.current === "scanning") {
+        setStates(prev => { const n = [...prev]; n[idx] = "scanning"; return n; });
+        phaseRef.current = "result";
+        setTimeout(tick, 500);
+      } else {
+        const result: PillState = CATEGORIES[idx].alwaysFails ? "failed" : "passed";
+        setStates(prev => { const n = [...prev]; n[idx] = result; return n; });
+        currentRef.current = idx + 1;
+        phaseRef.current = "scanning";
+        setTimeout(tick, 500);
+      }
+    };
+
+    const id = setTimeout(tick, 600);
+    return () => clearTimeout(id);
   }, []);
 
-  const status = useMemo(() => {
-    return items.reduce<Record<string, State>>((acc, item, i) => {
-      if (failed.has(item)) {
-        acc[item] = "failed";
-        return acc;
-      }
-      if (phase === 0) acc[item] = "queued";
-      if (phase === 1) acc[item] = i % 2 === 0 ? "active" : "queued";
-      if (phase === 2) acc[item] = i % 2 === 0 ? "passed" : "active";
-      return acc;
-    }, {});
-  }, [phase]);
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {items.map((item, i) => (
-        <div
-          key={item}
-          style={{
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 6,
-            padding: "8px 14px",
-            fontSize: 13,
-            fontFamily: "var(--font-geist-mono, monospace)",
-            transition: "all 240ms ease-out",
-            transitionDelay: `${i * 80}ms`,
-            ...stylesFor(status[item]),
-          }}
-        >
-          {item}
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {CATEGORIES.map((cat, i) => (
+        <div key={cat.id} style={pillStyle(states[i])}>
+          {cat.id}
         </div>
       ))}
     </div>

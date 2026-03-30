@@ -1,30 +1,59 @@
 export default function SocialProof() {
-  const logos = ["LangChain", "CrewAI", "AutoGen", "OpenAI", "Anthropic"];
+  const frameworks = ["LangChain", "CrewAI", "AutoGen", "OpenAI SDK", "Anthropic SDK"];
+
   return (
-    <section
-      className="flex items-center justify-center"
+    <div
       style={{
-        height: 56,
+        height: 52,
         borderTop: "1px solid rgba(255,255,255,0.06)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(255,255,255,0.015)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 0,
+        paddingLeft: 24,
+        paddingRight: 24,
+        overflow: "hidden",
       }}
     >
-      <div className="flex items-center gap-5 md:gap-8 px-6 flex-wrap justify-center">
-        <span style={{ fontSize: 13, color: "#333338", fontWeight: 500 }}>
-          Trusted by engineers building on:
-        </span>
-        {logos.map((name, i) => (
-          <span key={name} className="flex items-center gap-5 md:gap-8" style={{ fontFamily: "var(--font-geist-mono, monospace)" }}>
+      <span
+        style={{
+          fontSize: 12,
+          color: "#333338",
+          marginRight: 24,
+          whiteSpace: "nowrap",
+        }}
+      >
+        Works with
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+        {frameworks.map((fw, i) => (
+          <span key={fw} style={{ display: "flex", alignItems: "center" }}>
             {i > 0 && (
-              <span className="hidden md:inline-block" style={{ width: 1, height: 16, background: "rgba(255,255,255,0.06)" }} />
+              <span
+                style={{
+                  width: 1,
+                  height: 14,
+                  background: "rgba(255,255,255,0.08)",
+                  display: "inline-block",
+                  margin: "0 18px",
+                }}
+              />
             )}
-            <span style={{ fontSize: 13, color: "#333338", fontWeight: 500 }}>
-              {name}
+            <span
+              style={{
+                fontFamily: "var(--font-geist-mono, monospace)",
+                fontSize: 13,
+                color: "#444450",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {fw}
             </span>
           </span>
         ))}
       </div>
-    </section>
+    </div>
   );
 }

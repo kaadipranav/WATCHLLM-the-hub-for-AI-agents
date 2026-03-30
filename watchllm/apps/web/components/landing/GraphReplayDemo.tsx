@@ -1,91 +1,168 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
 
-type NodeType = "agent_start" | "llm_call" | "tool_call" | "failure" | "agent_end";
-
-type Node = {
-  id: number;
-  x: number;
-  y: number;
-  type: NodeType;
-  label: string;
-  ms: number;
-  cost: string;
-};
-
-const nodes: Node[] = [
-  { id: 1, x: 24, y: 58, type: "agent_start", label: "agent_start", ms: 0, cost: "$0.0000" },
-  { id: 2, x: 90, y: 30, type: "llm_call", label: "llm_call", ms: 322, cost: "$0.0005" },
-  { id: 3, x: 162, y: 52, type: "tool_call", label: "tool_call", ms: 612, cost: "$0.0010" },
-  { id: 4, x: 228, y: 24, type: "tool_call", label: "tool_call", ms: 847, cost: "$0.0012" },
-  { id: 5, x: 300, y: 54, type: "llm_call", label: "llm_call", ms: 1140, cost: "$0.0018" },
-  { id: 6, x: 370, y: 30, type: "failure", label: "FAILURE", ms: 1320, cost: "$0.0021" },
-  { id: 7, x: 438, y: 58, type: "agent_end", label: "agent_end", ms: 1452, cost: "$0.0021" },
+const NODES = [
+  { id: "N1", x: 60,  y: 140, type: "start",    label: "start",     labelColor: "#333338" },
+  { id: "N2", x: 160, y: 80,  type: "llm",       label: "llm_call",  labelColor: "#7B61FF" },
+  { id: "N3", x: 160, y: 200, type: "tool",      label: "tool_call", labelColor: "#00C896" },
+  { id: "N4", x: 280, y: 80,  type: "llm",       label: "llm_call",  labelColor: "#7B61FF" },
+  { id: "N5", x: 280, y: 200, type: "tool",      label: "tool_call", labelColor: "#00C896" },
+  { id: "N6", x: 380, y: 140, type: "failure",   label: "FAILED",    labelColor: "#FF4444" },
+  { id: "N7", x: 460, y: 140, type: "end",       label: "end",       labelColor: "#333338" },
 ];
 
-function nodeStyle(type: NodeType) {
-  if (type === "llm_call") return { border: "#7B61FF", fill: "rgba(123,97,255,0.2)" };
-  if (type === "tool_call") return { border: "#00C896", fill: "rgba(0,200,150,0.2)" };
-  if (type === "failure") return { border: "#FF4444", fill: "rgba(255,68,68,0.15)" };
-  return { border: "#1a1a1f", fill: "#333338" };
-}
+const EDGES = [
+  { from: 0, to: 1 }, { from: 0, to: 2 },
+  { from: 1, to: 3 }, { from: 2, to: 4 },
+  { from: 3, to: 5 }, { from: 4, to: 5 },
+  { from: 5, to: 6 },
+];
+
+const LATENCIES = [0, 234, 891, 445, 1203, 847, 12];
+
+const nodeStyle = (type: string) => {
+  if (type === "llm")     return { fill: "rgba(123,97,255,0.1)", stroke: "#7B61FF", strokeWidth: 1.5, filter: "" };
+  if (type === "tool")    return { fill: "rgba(0,200,150,0.1)", stroke: "#00C896", strokeWidth: 1.5, filter: "" };
+  if (type === "failure") return { fill: "rgba(255,68,68,0.15)", stroke: "#FF4444", strokeWidth: 2, filter: "drop-shadow(0 0 8px rgba(255,68,68,0.4))" };
+  return { fill: "#0f0f14", stroke: "rgba(255,255,255,0.12)", strokeWidth: 1.5, filter: "" };
+};
+
+const bezierPath = (x1: number, y1: number, x2: number, y2: number) => {
+  const cx = (x1 + x2) / 2;
+  return `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;
+};
 
 export default function GraphReplayDemo() {
-  const [value, setValue] = useState(50);
-  const index = useMemo(() => Math.max(1, Math.min(nodes.length, Math.round((value / 100) * nodes.length))), [value]);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const [scrubber, setScrubber] = useState(30);
+  const [dragging, setDragging] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const nodeIndex = Math.floor((scrubber / 100) * (NODES.length - 1));
+  const currentNode = NODES[nodeIndex];
+
+  const handleMouseDown = () => setDragging(true);
+  const handleMouseUp = () => setDragging(false);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging || !trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    setScrubber(pct);
+  };
 
   return (
-    <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 16, background: "rgba(255,255,255,0.02)" }}>
-      <svg viewBox="0 0 460 94" width="100%" height="180" preserveAspectRatio="xMidYMid meet">
-        {nodes.slice(0, -1).map((node, i) => {
-          const next = nodes[i + 1];
-          const active = next.id <= index;
-          const isFailureEdge = next.type === "failure";
+    <div ref={ref} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+      <svg
+        width="100%"
+        viewBox="0 0 500 280"
+        style={{ overflow: "visible" }}
+      >
+        <defs>
+          <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="rgba(255,255,255,0.1)" />
+          </marker>
+          <marker id="arrow-red" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="rgba(255,68,68,0.3)" />
+          </marker>
+        </defs>
+
+        {/* Edges */}
+        {EDGES.map((edge, i) => {
+          const from = NODES[edge.from];
+          const to = NODES[edge.to];
+          const isFailEdge = to.type === "failure" || from.type === "failure";
           return (
-            <path
-              key={`${node.id}-${next.id}`}
-              d={`M ${node.x} ${node.y} C ${(node.x + next.x) / 2} ${node.y - 20}, ${(node.x + next.x) / 2} ${next.y + 20}, ${next.x} ${next.y}`}
+            <motion.path
+              key={i}
+              d={bezierPath(from.x, from.y, to.x, to.y)}
+              stroke={isFailEdge ? "rgba(255,68,68,0.3)" : "rgba(255,255,255,0.1)"}
+              strokeWidth={1.5}
               fill="none"
-              stroke={isFailureEdge ? "#FF4444" : "#222228"}
-              strokeWidth="1.5"
-              opacity={active ? (isFailureEdge ? 0.4 : 1) : 0.2}
+              markerEnd={isFailEdge ? "url(#arrow-red)" : "url(#arrow)"}
+              initial={{ pathLength: 0 }}
+              animate={inView ? { pathLength: 1 } : {}}
+              transition={{ duration: 0.3, delay: i * 0.1, ease: "easeOut" }}
             />
           );
         })}
 
-        {nodes.map((n) => {
-          const state = nodeStyle(n.type);
-          const active = n.id <= index;
+        {/* Nodes */}
+        {NODES.map((node, i) => {
+          const style = nodeStyle(node.type);
+          const afterCurrent = i > nodeIndex;
           return (
-            <g key={n.id} opacity={active ? 1 : 0.2}>
-              <circle cx={n.x} cy={n.y} r={8} stroke={state.border} fill={state.fill} />
-              {n.type === "failure" && <circle cx={n.x} cy={n.y} r={12} fill="none" stroke="#FF4444" opacity={0.3} />}
-              <text x={n.x} y={n.y + 19} textAnchor="middle" style={{ fill: "#444450", fontSize: 12, fontFamily: "var(--font-geist-mono, monospace)" }}>
-                {n.label}
+            <motion.g
+              key={node.id}
+              initial={{ opacity: 0 }}
+              animate={inView ? { opacity: afterCurrent ? 0.2 : 1 } : { opacity: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 + i * 0.12 }}
+              style={{ filter: style.filter || undefined }}
+            >
+              <motion.circle
+                cx={node.x}
+                cy={node.y}
+                r={18}
+                fill={style.fill}
+                stroke={style.stroke}
+                strokeWidth={style.strokeWidth}
+                animate={i === nodeIndex ? { scale: 1.08 } : { scale: 1 }}
+                transition={{ duration: 0.2 }}
+              />
+              <text
+                x={node.x}
+                y={node.y + 32}
+                textAnchor="middle"
+                style={{ fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10, fill: node.labelColor }}
+              >
+                {node.label}
               </text>
-            </g>
+            </motion.g>
           );
         })}
       </svg>
 
-      <div style={{ marginTop: 14 }}>
-        <div style={{ height: 2, background: "#1a1a1f", position: "relative" }}>
-          <div style={{ height: 2, width: `${value}%`, background: "#00C896" }} />
-          <div style={{ position: "absolute", left: `calc(${value}% - 6px)`, top: -5, width: 12, height: 12, borderRadius: 9999, background: "#00C896" }} />
+      {/* Scrubber */}
+      <div style={{ marginTop: 16, paddingLeft: 24, paddingRight: 24 }}>
+        <div
+          ref={trackRef}
+          style={{ height: 3, borderRadius: 9999, background: "rgba(255,255,255,0.08)", position: "relative", cursor: "pointer" }}
+          onClick={(e) => {
+            if (!trackRef.current) return;
+            const rect = trackRef.current.getBoundingClientRect();
+            setScrubber(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
+          }}
+        >
+          <div
+            style={{
+              height: 3,
+              borderRadius: 9999,
+              background: "#00C896",
+              width: `${scrubber}%`,
+              transition: dragging ? "none" : "width 150ms ease",
+            }}
+          />
+          <div
+            onMouseDown={handleMouseDown}
+            style={{
+              position: "absolute",
+              top: -5.5,
+              left: `calc(${scrubber}% - 7px)`,
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: "#00C896",
+              cursor: "grab",
+              boxShadow: "0 0 0 3px rgba(0,200,150,0.15)",
+              transition: dragging ? "none" : "left 150ms ease",
+            }}
+          />
         </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={value}
-          onChange={(e) => setValue(Number(e.target.value))}
-          style={{ width: "100%", opacity: 0, marginTop: -14, height: 20, cursor: "pointer" }}
-          aria-label="timeline scrubber"
-        />
-      </div>
-
-      <div style={{ marginTop: 8, fontSize: 12, color: "#444450", fontFamily: "var(--font-geist-mono, monospace)" }}>
-        Node {index} of 7 · {nodes[index - 1].type === "failure" ? "FAILURE" : nodes[index - 1].label} · {nodes[index - 1].ms}ms · {nodes[index - 1].cost}
+        <div style={{ marginTop: 10, fontFamily: "var(--font-geist-mono, monospace)", fontSize: 11, color: "#444450" }}>
+          Node {nodeIndex + 1} of {NODES.length} · {currentNode.label} · {LATENCIES[nodeIndex]}ms
+        </div>
       </div>
     </div>
   );
