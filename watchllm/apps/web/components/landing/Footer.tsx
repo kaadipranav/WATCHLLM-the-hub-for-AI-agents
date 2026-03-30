@@ -18,11 +18,12 @@ export default function Footer() {
             <div>
               <div style={{ color: "#EDEDED", fontSize: 14, marginBottom: 10 }}>Product</div>
               <div className="space-y-2">
-                <div><Link href="#features" style={{ color: "#666672", fontSize: 13 }}>Features</Link></div>
-                <div><Link href="#pricing" style={{ color: "#666672", fontSize: 13 }}>Pricing</Link></div>
+                <div><Link href="/" style={{ color: "#666672", fontSize: 13 }}>Home</Link></div>
                 <div><Link href="/changelog" style={{ color: "#666672", fontSize: 13 }}>Changelog</Link></div>
+                <div><Link href="/docs" style={{ color: "#666672", fontSize: 13 }}>Status</Link></div>
               </div>
             </div>
+
 
             <div>
               <div style={{ color: "#EDEDED", fontSize: 14, marginBottom: 10 }}>Developers</div>

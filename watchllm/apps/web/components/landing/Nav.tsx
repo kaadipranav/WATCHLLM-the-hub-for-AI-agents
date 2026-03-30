@@ -30,10 +30,10 @@ export default function Nav() {
       </Link>
 
       <nav className="hidden md:flex items-center" style={{ gap: 32 }}>
-        {["Docs", "Changelog", "Pricing"].map((label) => (
+        {["Docs", "Changelog"].map((label) => (
           <Link
             key={label}
-            href={label === "Pricing" ? "#pricing" : `/${label.toLowerCase()}`}
+            href={`/${label.toLowerCase()}`}
             className="transition-colors duration-150"
             style={{ fontSize: 14, color: "#666672" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#EDEDED")}

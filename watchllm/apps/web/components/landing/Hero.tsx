@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Magnet from "../reactbits/Magnet";
 import SplitText from "../reactbits/SplitText";
 import BlurIn from "../reactbits/BlurIn";
-import SimulationMockTerminal from "./SimulationMockTerminal";
+
 
 const Aurora = dynamic(() => import("../reactbits/Aurora"), { ssr: false });
 
@@ -47,37 +47,29 @@ export default function Hero() {
           <span style={{ fontSize: 12, color: "#00C896", letterSpacing: "0.05em" }}>Agent Reliability Platform</span>
         </div>
 
-        <div className="mt-6 text-center" style={{ minHeight: 150 }}>
+        <div className="mt-10 mb-20 text-center" style={{ minHeight: 120 }}>
           <SplitText
             tag="h1"
-            text={"Your agent breaks in prod.\nWatchLLM shows you"}
+            text={"The Reliability Layer for\nAgentic AI"}
             splitType="words"
             delay={40}
             duration={0.6}
-            className="text-[40px] md:text-[64px] font-semibold leading-[1.08] tracking-[-0.03em] text-[#EDEDED]"
-          />
-          <SplitText
-            tag="h1"
-            text="exactly why."
-            splitType="words"
-            delay={40}
-            duration={0.6}
-            className="text-[40px] md:text-[64px] font-semibold leading-[1.08] tracking-[-0.03em] text-[#00C896]"
+            className="text-[44px] md:text-[72px] font-semibold leading-[1.05] tracking-[-0.04em] text-[#EDEDED]"
           />
         </div>
 
         <BlurIn
-          text="Stress test with 20+ attack scenarios. Replay any run as a graph. Fork from any failure node. Ship agents that don't wake you up at 3am."
+          text="Run adversarial simulations. Replay traces as a graph. Ship agents that stay within guardrails."
           animateBy="words"
           delay={30}
-          className="mt-3 text-center text-[16px] md:text-[18px] text-[#666672] leading-[1.6] max-w-[520px]"
+          className="mt-2 text-center text-[16px] md:text-[20px] text-[#666672] leading-[1.5] max-w-[500px]"
         />
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.45, ease: "easeOut" }}
-          className="flex items-center gap-3 mt-8"
+          className="flex items-center gap-4 mt-12"
         >
           <Magnet padding={40} magnetStrength={3}>
             <motion.div whileHover={{ scale: 1.03, filter: "brightness(1.08)" }} transition={{ duration: 0.2, ease: "easeOut" }}>
@@ -85,17 +77,17 @@ export default function Hero() {
                 href="/sign-up"
                 className="inline-flex items-center justify-center font-medium transition-all duration-150"
                 style={{
-                  height: 40,
-                  paddingLeft: 24,
-                  paddingRight: 24,
-                  borderRadius: 7,
+                  height: 48,
+                  paddingLeft: 32,
+                  paddingRight: 32,
+                  borderRadius: 8,
                   background: "#00C896",
                   color: "#060608",
-                  fontSize: 15,
-                  fontWeight: 500,
+                  fontSize: 16,
+                  fontWeight: 600,
                 }}
               >
-                Start testing free
+                Join the waitlist
               </Link>
             </motion.div>
           </Magnet>
@@ -103,14 +95,14 @@ export default function Hero() {
             href="/docs"
             className="inline-flex items-center justify-center transition-all duration-150"
             style={{
-              height: 40,
-              paddingLeft: 24,
-              paddingRight: 24,
-              borderRadius: 7,
+              height: 48,
+              paddingLeft: 32,
+              paddingRight: 32,
+              borderRadius: 8,
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
               color: "#EDEDED",
-              fontSize: 15,
+              fontSize: 16,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
@@ -124,19 +116,8 @@ export default function Hero() {
             Read the docs
           </Link>
         </motion.div>
-
-        <div className="flex items-center gap-4 mt-5" style={{ fontSize: 12, color: "#444450" }}>
-          <span>No credit card</span>
-          <span>·</span>
-          <span>Works with any framework</span>
-          <span>·</span>
-          <span>Deploy in 5 min</span>
-        </div>
-
-        <div className="mt-16 w-full" style={{ minHeight: 320 }}>
-          <SimulationMockTerminal />
-        </div>
       </div>
     </section>
   );
 }
+
