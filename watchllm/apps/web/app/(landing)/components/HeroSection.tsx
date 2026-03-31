@@ -47,32 +47,24 @@ export default function HeroSection() {
           style={{ 
             fontSize: "var(--text-hero)",
             lineHeight: 1.1,
-            letterSpacing: "-2px",
+            letterSpacing: "-1px",
             color: "var(--text-primary)"
           }}
         >
           <div className={`transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-            Your agent
+            Your agent breaks in prod
           </div>
           <div 
-            className={`transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
+            className={`transition-all duration-700 delay-200 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
           >
+            <span style={{ color: "var(--accent-teal)" }}>WatchLLM</span> shows you{" "}
             <span 
               className="inline-block"
               style={{ animation: mounted ? "glitch-snap 0.6s ease forwards 0.8s" : "none" }}
             >
-              breaks
+              why
             </span>
-            {" "}in prod.
-          </div>
-          <div className={`transition-all duration-700 delay-200 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-            <span style={{ color: "var(--accent-teal)" }}>WatchLLM</span> shows you
-          </div>
-          <div 
-            className={`transition-all duration-700 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
-            style={{ color: "var(--text-secondary)", fontStyle: "italic" }}
-          >
-            why.
+            .
           </div>
         </h1>
 
