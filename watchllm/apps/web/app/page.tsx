@@ -1,26 +1,26 @@
-import Nav from "@/components/landing/Nav";
-import Hero from "@/components/landing/Hero";
-import SocialProof from "@/components/landing/SocialProof";
-import Problem from "@/components/landing/Problem";
-import Features from "@/components/landing/Features";
-import SDKSection from "@/components/landing/SDKSection";
-import Metrics from "@/components/landing/Metrics";
-import Pricing from "@/components/landing/Pricing";
-import FinalCTA from "@/components/landing/FinalCTA";
-import Footer from "@/components/landing/Footer";
+import NavBar from "@/app/(landing)/components/NavBar";
+import HeroSection from "@/app/(landing)/components/HeroSection";
+import FrameworkStrip from "@/app/(landing)/components/FrameworkStrip";
+import ProblemSection from "@/app/(landing)/components/ProblemSection";
+import FeaturesSection from "@/app/(landing)/components/FeaturesSection";
+import SDKSection from "@/app/(landing)/components/SDKSection";
+import PricingSection from "@/app/(landing)/components/PricingSection";
+import FinalCTA from "@/app/(landing)/components/FinalCTA";
+import Footer from "@/app/(landing)/components/Footer";
+import CustomCursor from "@/app/(landing)/components/CustomCursor";
 
 export default function HomePage() {
   return (
-    <div style={{ background: "#060608", color: "#EDEDED", minHeight: "100vh" }}>
-      <Nav />
+    <div style={{ background: "var(--bg-void)", color: "var(--text-primary)", minHeight: "100vh" }}>
+      <CustomCursor />
+      <NavBar />
       <main>
-        <Hero />
-        <SocialProof />
-        <Problem />
-        <Features />
+        <HeroSection />
+        <FrameworkStrip />
+        <ProblemSection />
+        <FeaturesSection />
         <SDKSection />
-        <Metrics />
-        <Pricing />
+        <PricingSection />
         <FinalCTA />
         <Footer />
       </main>
