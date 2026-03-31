@@ -39,7 +39,7 @@ export default function FinalCTA() {
           {words1.map((word, i) => (
             <span
               key={`w1-${i}`}
-              className="inline-block font-bold"
+              className="inline-block font-bold mr-2"
               style={{
                 fontSize: "clamp(40px, 6vw, 80px)",
                 lineHeight: 1.1,
@@ -50,7 +50,7 @@ export default function FinalCTA() {
                 transition: `all 0.6s ease-out ${i * 0.04}s`
               }}
             >
-              {word}{" "}
+              {word}
             </span>
           ))}
         </div>
@@ -60,7 +60,7 @@ export default function FinalCTA() {
           {words2.map((word, i) => (
             <span
               key={`w2-${i}`}
-              className="inline-block font-bold"
+              className="inline-block font-bold mr-2"
               style={{
                 fontSize: "clamp(40px, 6vw, 80px)",
                 lineHeight: 1.1,
@@ -71,7 +71,7 @@ export default function FinalCTA() {
                 transition: `all 0.6s ease-out ${0.2 + i * 0.04}s`
               }}
             >
-              {word}{" "}
+              {word}
             </span>
           ))}
         </div>

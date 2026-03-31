@@ -46,8 +46,8 @@ export default function HeroSection() {
           className="font-bold tracking-tight mb-6"
           style={{ 
             fontSize: "var(--text-hero)",
-            lineHeight: 0.9,
-            letterSpacing: "-3px",
+            lineHeight: 1.1,
+            letterSpacing: "-2px",
             color: "var(--text-primary)"
           }}
         >
