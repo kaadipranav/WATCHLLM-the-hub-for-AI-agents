@@ -1,45 +1,149 @@
-import SimulationMockTerminal from "./SimulationMockTerminal";
+"use client";
+
+import HeroCanvas from "./HeroCanvas";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function HeroSection() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <section id="hero-sentinel" className="relative flex flex-col items-center overflow-hidden px-6 pb-32 pt-24 text-center lg:px-12">
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent/20 blur-[120px] rounded-full pointer-events-none" />
-
-      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 mb-8 backdrop-blur-sm">
-        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-        <span className="text-xs font-mono text-gray-300">Watching agent failures in real-time</span>
-      </div>
-
-      <h1 className="text-5xl md:text-7xl font-bold tracking-tight max-w-4xl text-white mb-6">
-        Your agent works in dev.<br/>
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-emerald-400">
-          WatchLLM makes it work in prod.
-        </span>
-      </h1>
-
-      <p className="text-lg md:text-xl text-gray-400 max-w-2xl mb-10">
-        Stress test with real failures. Replay any run. Fork from any node.
-      </p>
-
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-16">
-        <Link href="/sign-up" className="bg-accent text-black px-6 py-3 rounded-full font-medium hover:bg-accent/90 transition shadow-[0_0_20px_rgba(0,200,150,0.4)]">
-          Start testing free
-        </Link>
-        <Link href="/docs" className="px-6 py-3 rounded-full font-medium text-white border border-white/10 hover:bg-white/5 transition">
-          Read the docs
-        </Link>
-      </div>
+    <section id="hero-sentinel" className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6 py-20 text-center">
+      <HeroCanvas />
       
-      <div className="flex items-center gap-4 text-sm text-gray-500 mb-16 font-mono">
-        <span>SOC2 compliant</span>
-        <span className="w-1 h-1 rounded-full bg-gray-600" />
-        <span>Open-source SDK</span>
-        <span className="w-1 h-1 rounded-full bg-gray-600" />
-        <span>CI/CD ready</span>
+      <div className="relative z-10 max-w-4xl mx-auto">
+        {/* Badge */}
+        <div 
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border mb-8 transition-all duration-700 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+          }`}
+          style={{ 
+            borderColor: "rgba(0, 229, 176, 0.3)", 
+            background: "rgba(0, 229, 176, 0.06)" 
+          }}
+        >
+          <span 
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ 
+              background: "var(--accent-teal)",
+              animation: "pulse-opacity 2s ease-in-out infinite"
+            }}
+          />
+          <span 
+            className="text-xs font-mono"
+            style={{ color: "var(--accent-teal)" }}
+          >
+            AGENT RELIABILITY PLATFORM
+          </span>
+        </div>
+
+        {/* Headline */}
+        <h1 
+          className="font-bold tracking-tight mb-6"
+          style={{ 
+            fontSize: "var(--text-hero)",
+            lineHeight: 0.9,
+            letterSpacing: "-3px",
+            color: "var(--text-primary)"
+          }}
+        >
+          <div className={`transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
+            Your agent
+          </div>
+          <div 
+            className={`transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
+          >
+            <span 
+              className="inline-block"
+              style={{ animation: mounted ? "glitch-snap 0.6s ease forwards 0.8s" : "none" }}
+            >
+              breaks
+            </span>
+            {" "}in prod.
+          </div>
+          <div className={`transition-all duration-700 delay-200 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
+            <span style={{ color: "var(--accent-teal)" }}>WatchLLM</span> shows you
+          </div>
+          <div 
+            className={`transition-all duration-700 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
+            style={{ color: "var(--text-secondary)", fontStyle: "italic" }}
+          >
+            why.
+          </div>
+        </h1>
+
+        {/* Subtext */}
+        <p 
+          className={`text-lg md:text-xl max-w-xl mx-auto mb-10 transition-all duration-700 delay-500 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Stress test with 20+ adversarial scenarios. Replay any run as a graph. Fork from any failure node.
+        </p>
+
+        {/* CTA Row */}
+        <div 
+          className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-4 transition-all duration-700 delay-700 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
+        >
+          <Link 
+            href="/sign-up" 
+            className="magnetic px-9 py-4 rounded-lg font-bold text-base transition-all duration-200 hover:-translate-y-0.5"
+            style={{ 
+              background: "var(--accent-teal)", 
+              color: "#000",
+              boxShadow: "var(--glow-teal)"
+            }}
+          >
+            Start testing free →
+          </Link>
+          <Link 
+            href="/docs" 
+            className="magnetic px-9 py-4 rounded-lg font-medium text-base transition-all duration-200"
+            style={{ 
+              border: "1px solid var(--border-subtle)",
+              color: "var(--text-secondary)"
+            }}
+          >
+            Read the docs
+          </Link>
+        </div>
+
+        {/* Meta */}
+        <p 
+          className={`text-xs font-mono transition-all duration-700 delay-800 ${
+            mounted ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ color: "var(--text-muted)" }}
+        >
+          No credit card · Any framework · 5 min setup
+        </p>
       </div>
 
-      <SimulationMockTerminal />
+      {/* Scroll indicator */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+        <div className="w-px h-10 relative" style={{ background: "var(--accent-teal)" }}>
+          <div 
+            className="absolute w-0.5 h-2 rounded-sm left-px"
+            style={{ 
+              background: "var(--accent-teal)",
+              animation: "scroll-dot 1.5s ease-in-out infinite"
+            }}
+          />
+        </div>
+        <span 
+          className="text-xs font-mono rotate-90 whitespace-nowrap"
+          style={{ color: "var(--text-muted)" }}
+        >
+          scroll
+        </span>
+      </div>
     </section>
   );
 }

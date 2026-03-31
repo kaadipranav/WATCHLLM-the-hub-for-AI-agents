@@ -1,53 +1,136 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import hljs from "highlight.js/lib/core";
-import javascript from "highlight.js/lib/languages/javascript";
-import "highlight.js/styles/github-dark.css";
+import { useEffect, useState, useRef } from "react";
 
-const sdkSnippet = `import { WatchLLM } from "watchllm";
+const codeLines = [
+  { text: "from watchllm import test", type: "import" },
+  { text: "", type: "empty" },
+  { text: "@test(", type: "decorator" },
+  { text: '    categories=["prompt_injection", "tool_abuse"],', type: "param" },
+  { text: '    threshold="severity < 0.3"', type: "param" },
+  { text: ")", type: "decorator" },
+  { text: "def my_agent(user_input: str) -> str:", type: "def" },
+  { text: "    # your existing agent — no changes needed", type: "comment" },
+  { text: "    return agent.run(user_input)", type: "return" },
+];
 
-const watcher = new WatchLLM({ apiKey: process.env.WATCHLLM_KEY! });
-export const agent = watcher.wrap(myAgent);`;
+const frameworks = ["LangChain", "CrewAI", "AutoGen", "OpenAI", "Anthropic"];
 
 export default function SDKSection() {
-  const codeRef = useRef<HTMLElement | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [visibleLines, setVisibleLines] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    hljs.registerLanguage("javascript", javascript);
-    if (codeRef.current) {
-      hljs.highlightElement(codeRef.current);
-    }
-  }, []);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !visible) {
+          setVisible(true);
+          // Typewriter effect
+          codeLines.forEach((_, i) => {
+            setTimeout(() => setVisibleLines(i + 1), i * 150);
+          });
+        }
+      },
+      { threshold: 0.3 }
+    );
 
-  const onCopy = async () => {
-    await navigator.clipboard.writeText(sdkSnippet);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  const getLineColor = (type: string) => {
+    switch (type) {
+      case "import": return "#ff7eb3";
+      case "decorator": return "var(--accent-teal)";
+      case "param": return "#ffd700";
+      case "def": return "#ff7eb3";
+      case "comment": return "var(--text-muted)";
+      case "return": return "var(--text-primary)";
+      default: return "var(--text-primary)";
+    }
   };
 
   return (
-    <section className="px-6 lg:px-12 py-24 bg-[#050505] border-y border-white/5 text-center">
-      <h2 className="text-3xl font-bold text-white mb-8">Three lines. Any framework.</h2>
-      <div className="max-w-2xl mx-auto text-left relative group">
-        <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-3xl opacity-0 group-hover:opacity-100 transition duration-500" />
-        <div className="relative bg-[#111] border border-white/10 rounded-xl overflow-hidden p-6 font-mono text-sm shadow-xl">
-          <pre className="text-gray-300 pr-20">
-            <code ref={codeRef} className="language-javascript">
-              {sdkSnippet}
-            </code>
-          </pre>
-          <button
-            type="button"
-            onClick={onCopy}
-            className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-xs transition"
+    <section 
+      ref={ref}
+      className="py-36 px-8 relative"
+      style={{ background: "var(--bg-surface)" }}
+    >
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, var(--bg-void), transparent 20%, transparent 80%, var(--bg-void))" }} />
+      
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center relative">
+        <div>
+          <div 
+            className="text-xs font-mono tracking-widest mb-4"
+            style={{ color: "var(--accent-teal)" }}
           >
-            {copied ? "Copied!" : "Copy"}
-          </button>
+            INTEGRATE
+          </div>
+          <h2 
+            className="font-bold mb-5"
+            style={{ 
+              fontSize: "var(--text-title)",
+              lineHeight: 1.1,
+              letterSpacing: "-1px",
+              color: "var(--text-primary)",
+              whiteSpace: "pre-line"
+            }}
+          >
+            Three lines.{`\n`}<span style={{ color: "var(--accent-teal)" }}>Any framework.</span>
+          </h2>
+          <p className="text-base mb-6" style={{ color: "var(--text-secondary)" }}>
+            Works with LangChain, CrewAI, AutoGen, raw OpenAI — anything callable as a Python function. One decorator. Results in 5 minutes.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {frameworks.map((fw) => (
+              <span 
+                key={fw}
+                className="px-3 py-1.5 rounded border text-xs font-mono"
+                style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}
+              >
+                {fw}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div 
+          className="rounded-xl border p-7"
+          style={{ background: "#0d0d1a", borderColor: "var(--border-subtle)" }}
+        >
+          {/* Traffic lights */}
+          <div className="flex gap-2 mb-5">
+            <div className="w-3 h-3 rounded-full" style={{ background: "#ff5f56" }} />
+            <div className="w-3 h-3 rounded-full" style={{ background: "#ffbd2e" }} />
+            <div className="w-3 h-3 rounded-full" style={{ background: "#27ca40" }} />
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-5 mb-5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+            <div className="pb-3 relative text-xs font-mono" style={{ color: "var(--text-primary)" }}>
+              Python
+              <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: "var(--accent-teal)" }} />
+            </div>
+            <div className="pb-3 text-xs font-mono" style={{ color: "var(--text-muted)" }}>CLI</div>
+          </div>
+
+          {/* Code */}
+          <div className="font-mono text-sm leading-relaxed">
+            {codeLines.slice(0, visibleLines).map((line, i) => (
+              <div key={i} style={{ color: getLineColor(line.type), minHeight: line.type === "empty" ? "1.6em" : "auto" }}>
+                {line.text}
+                {i === visibleLines - 1 && visibleLines < codeLines.length && (
+                  <span 
+                    className="inline-block w-0.5 h-4 ml-0.5"
+                    style={{ background: "var(--accent-teal)", animation: "blink-cursor 0.8s step-end infinite" }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <p className="mt-8 text-gray-500 font-mono text-sm text-center">Three lines. Any framework. CI/CD ready.</p>
     </section>
   );
 }

@@ -1,41 +1,70 @@
-import Link from 'next/link';
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
 
 export default function Footer() {
+  const [showEasterEgg, setShowEasterEgg] = useState(false);
+
   return (
-    <footer className="bg-black border-t border-white/5 py-12 px-6 lg:px-12">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-        <div className="col-span-1 md:col-span-2">
-          <Link href="/" className="font-bold font-mono tracking-wider text-accent text-xl">WatchLLM</Link>
-          <p className="text-sm text-gray-500 mt-4 max-w-sm">
-            Continuous evaluation, stress testing, and debugging for AI agents. Stop guessing, start measuring.
+    <footer 
+      className="py-12 px-8 border-t"
+      style={{ background: "var(--bg-surface)", borderColor: "var(--border-subtle)" }}
+    >
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
+        <div className="max-w-xs">
+          <Link 
+            href="/" 
+            className="inline-block text-xl font-bold relative group"
+            style={{ color: "var(--text-primary)" }}
+            onMouseEnter={() => setShowEasterEgg(true)}
+            onMouseLeave={() => setShowEasterEgg(false)}
+          >
+            Watch<span style={{ color: "var(--accent-teal)" }}>LLM</span>
+            
+            {/* Easter egg mini graph */}
+            {showEasterEgg && (
+              <svg 
+                className="absolute -bottom-1 left-0 w-full h-5"
+                viewBox="0 0 100 20"
+              >
+                <circle cx="10" cy="10" r="3" fill="#fff">
+                  <animate attributeName="opacity" values="0;1;0" dur="0.3s" begin="0s" fill="freeze"/>
+                </circle>
+                <circle cx="35" cy="10" r="3" fill="#7b61ff">
+                  <animate attributeName="opacity" values="0;1;0" dur="0.3s" begin="0.3s" fill="freeze"/>
+                </circle>
+                <circle cx="60" cy="10" r="3" fill="#00e5b0">
+                  <animate attributeName="opacity" values="0;1;0" dur="0.3s" begin="0.6s" fill="freeze"/>
+                </circle>
+                <circle cx="85" cy="10" r="3" fill="rgba(0,229,176,0.8)">
+                  <animate attributeName="opacity" values="0;1;1" dur="0.3s" begin="0.9s" fill="freeze"/>
+                </circle>
+              </svg>
+            )}
+          </Link>
+          <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>
+            Chaos monkey for AI agents.
+          </p>
+          <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
+            © 2025 WatchLLM. All rights reserved.
           </p>
         </div>
         
-        <div>
-          <h4 className="text-white font-medium mb-4">Product</h4>
-          <ul className="space-y-2 text-sm text-gray-400">
-            <li><Link href="/#features" className="hover:text-white transition">Features</Link></li>
-            <li><Link href="/#pricing" className="hover:text-white transition">Pricing</Link></li>
-            <li><Link href="/docs" className="hover:text-white transition">Documentation</Link></li>
-            <li><Link href="/changelog" className="hover:text-white transition">Changelog</Link></li>
-          </ul>
+        <div className="flex flex-col gap-3">
+          <Link href="/docs" className="text-xs transition-colors" style={{ color: "var(--text-secondary)" }}>Docs</Link>
+          <Link href="/changelog" className="text-xs transition-colors" style={{ color: "var(--text-secondary)" }}>Changelog</Link>
+          <Link href="/#pricing" className="text-xs transition-colors" style={{ color: "var(--text-secondary)" }}>Pricing</Link>
+          <Link href="/blog" className="text-xs transition-colors" style={{ color: "var(--text-secondary)" }}>Blog</Link>
         </div>
-        
-        <div>
-          <h4 className="text-white font-medium mb-4">Company</h4>
-          <ul className="space-y-2 text-sm text-gray-400">
-            <li><Link href="/about" className="hover:text-white transition">About</Link></li>
-            <li><Link href="/blog" className="hover:text-white transition">Blog</Link></li>
-            <li><Link href="/terms" className="hover:text-white transition">Terms of Service</Link></li>
-            <li><Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 text-sm text-gray-600 flex justify-between items-center">
-        <span>© {new Date().getFullYear()} WatchLLM Inc. All rights reserved.</span>
-        <div className="flex gap-4">
-          <a href="#" className="hover:text-white transition">Twitter</a>
-          <a href="#" className="hover:text-white transition">GitHub</a>
+
+        <div className="text-right">
+          <p className="text-xs mb-2">
+            <a href="https://twitter.com/watchllm" style={{ color: "var(--accent-teal)" }}>@watchllm</a>
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Built by engineers, for engineers.
+          </p>
         </div>
       </div>
     </footer>

@@ -1,35 +1,148 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+
+const problems = [
+  {
+    title: "Agents fail silently",
+    description: "You find out when a user reports it. By then, the damage is done.",
+    icon: "alert",
+  },
+  {
+    title: "Logs don't replay",
+    description: "You see the crash. You can't rewind to what caused it.",
+    icon: "clock",
+  },
+  {
+    title: "Debugging burns credits",
+    description: "Every debug attempt reruns the full agent. Costs stack up fast.",
+    icon: "coins",
+  },
+];
+
 export default function ProblemSection() {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="px-6 lg:px-12 py-24 bg-[#050505] border-y border-white/5">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-        <div className="flex flex-col gap-4">
-          <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Agents fail silently</h3>
-          <p className="text-gray-400">LLM agents fail in unpredicted ways. By the time users report it, you&apos;ve already lost trust.</p>
+    <section 
+      ref={ref}
+      className="py-36 px-8"
+      style={{ background: "var(--bg-void)" }}
+    >
+      <div className="max-w-6xl mx-auto">
+        <div 
+          className="text-xs font-mono tracking-widest mb-6"
+          style={{ color: "var(--accent-teal)" }}
+        >
+          THE PROBLEM
         </div>
         
-        <div className="flex flex-col gap-4">
-          <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-500">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Logs don&apos;t replay</h3>
-          <p className="text-gray-400">Reading a linear log of LLM calls isn&apos;t enough. You need to visualize the execution graph and replay it.</p>
-        </div>
+        <h2 
+          className="font-bold mb-16 max-w-2xl"
+          style={{ 
+            fontSize: "var(--text-display)",
+            lineHeight: 1,
+            letterSpacing: "-2px",
+            color: "var(--text-primary)",
+            whiteSpace: "pre-line"
+          }}
+        >
+          Agents work in dev.{`\n`}Production is different.
+        </h2>
 
-        <div className="flex flex-col gap-4">
-          <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Every debug costs money</h3>
-          <p className="text-gray-400">Running full runs to reproduce bugs burns tokens. Forking from the exact failure node saves you cash.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {problems.map((problem, i) => (
+            <div
+              key={problem.title}
+              className="p-9 rounded-xl border transition-all duration-250 group cursor-pointer"
+              style={{
+                background: "var(--bg-surface)",
+                borderColor: "var(--border-subtle)",
+                transform: visible ? "translateY(0)" : "translateY(60px)",
+                opacity: visible ? 1 : 0,
+                transitionDelay: `${i * 150}ms`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255, 107, 53, 0.3)";
+                e.currentTarget.style.boxShadow = "var(--glow-failure)";
+                e.currentTarget.style.transform = "translateY(-4px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <div className="w-12 h-12 mb-5 relative">
+                {problem.icon === "alert" && (
+                  <>
+                    <div 
+                      className="absolute top-1/2 left-1/2 w-6 h-6 rounded-full border"
+                      style={{
+                        borderColor: "var(--accent-amber)",
+                        animation: "alert-ping 2s ease-out infinite",
+                        transform: "translate(-50%, -50%)"
+                      }}
+                    />
+                    <svg viewBox="0 0 24 24" fill="none" style={{ color: "var(--accent-amber)" }}>
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.5"/>
+                    </svg>
+                  </>
+                )}
+                {problem.icon === "clock" && (
+                  <svg viewBox="0 0 24 24" fill="none" style={{ color: "var(--text-secondary)" }}>
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/>
+                    <g className="group-hover:animate-spin" style={{ transformOrigin: "12px 12px" }}>
+                      <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5"/>
+                    </g>
+                    <path d="M4 4l16 16" stroke="var(--accent-amber)" strokeWidth="1.5"/>
+                  </svg>
+                )}
+                {problem.icon === "coins" && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <ellipse cx="12" cy="16" rx="6" ry="3" stroke="var(--text-muted)" strokeWidth="1.5"/>
+                    <ellipse cx="12" cy="12" rx="6" ry="3" stroke="var(--text-muted)" strokeWidth="1.5"/>
+                    <ellipse cx="12" cy="8" rx="6" ry="3" stroke="var(--text-muted)" strokeWidth="1.5"/>
+                    <g className="group-hover:opacity-100 opacity-80">
+                      <path d="M12 20c-2-1-2-3-1-5 1-2 2-3 1-5" stroke="var(--accent-amber)" strokeWidth="1.5" fill="none"/>
+                    </g>
+                  </svg>
+                )}
+              </div>
+              
+              <h3 
+                className="text-lg font-semibold mb-3"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {problem.title}
+              </h3>
+              
+              <p 
+                className="text-sm leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {problem.description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
