@@ -54,10 +54,12 @@ export async function upsertAppUserByEmail(
 }
 
 export function createAuth(env: Env, requestUrl: string) {
-  const baseURL = new URL(requestUrl).origin;
+  // Use APP_URL as baseURL. Since we are rewriting requests from the frontend, 
+  // Better Auth should operate relative to the frontend domain for cookie consistency.
+  const baseURL = env.APP_URL.replace(/\/$/, "");
   const trustedOrigins = isLocalAppUrl(env.APP_URL)
-    ? [env.APP_URL, baseURL]
-    : [env.APP_URL];
+    ? [baseURL, new URL(requestUrl).origin]
+    : [baseURL];
 
   return betterAuth({
     secret: env.BETTER_AUTH_SECRET,

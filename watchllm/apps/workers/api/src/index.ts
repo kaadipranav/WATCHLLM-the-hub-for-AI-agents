@@ -455,18 +455,16 @@ app.get("/api/v1/health", (c) =>
 app.route("/api/v1/dev/mock-agent", mockAgentRoutes);
 
 app.get("/api/v1/auth/signin/github", async (c) => {
-  const url = new URL(c.req.url);
-  const apiOrigin = url.origin;
-  const internal = new Request(`${apiOrigin}/api/v1/auth/sign-in/social`, {
+  const internal = new Request(`${c.env.APP_URL}/api/v1/auth/sign-in/social`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       cookie: c.req.header("cookie") ?? "",
-      origin: apiOrigin,
+      origin: c.env.APP_URL,
     },
     body: JSON.stringify({
       provider: "github",
-      callbackURL: `${apiOrigin}/api/v1/auth/callback/github`,
+      callbackURL: `${c.env.APP_URL}/api/v1/auth/callback/github`,
     }),
   });
   const response = await handleAuthRequest(internal, c.env);
@@ -499,7 +497,18 @@ app.get("/api/v1/auth/me", requireAuth, async (c) =>
 
 // Handle OAuth callbacks from social providers
 app.get("/api/v1/auth/callback/:provider", async (c) => {
-  const response = await handleAuthRequest(c.req.raw, c.env);
+  const url = new URL(c.req.url);
+  // Ensure the request appears to come from APP_URL so Better Auth validates state correctly
+  const appUrlObj = new URL(c.env.APP_URL);
+  url.protocol = appUrlObj.protocol;
+  url.host = appUrlObj.host;
+  
+  const internal = new Request(url.toString(), {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+  });
+  
+  const response = await handleAuthRequest(internal, c.env);
   
   // If the response is a redirect (from Better Auth), extract the redirect URL
   if (response.status === 302 || response.status === 301) {
@@ -514,9 +523,20 @@ app.get("/api/v1/auth/callback/:provider", async (c) => {
   return response;
 });
 
-app.on(["GET", "POST", "PUT", "PATCH", "DELETE"], "/api/v1/auth/*", (c) =>
-  handleAuthRequest(c.req.raw, c.env),
-);
+app.on(["GET", "POST", "PUT", "PATCH", "DELETE"], "/api/v1/auth/*", (c) => {
+  const url = new URL(c.req.url);
+  const appUrlObj = new URL(c.env.APP_URL);
+  url.protocol = appUrlObj.protocol;
+  url.host = appUrlObj.host;
+  
+  const internal = new Request(url.toString(), {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+    body: c.req.raw.body,
+  });
+  
+  return handleAuthRequest(internal, c.env);
+});
 
 const keys = new Hono<AppContext>();
 keys.use("*", requireAuth);
