@@ -468,7 +468,18 @@ app.get("/api/v1/auth/signin/github", async (c) => {
       callbackURL: `${c.env.APP_URL}/dashboard`,
     }),
   });
-  return handleAuthRequest(internal, c.env);
+  const response = await handleAuthRequest(internal, c.env);
+  
+  // Better Auth returns JSON with a redirect URL for social sign-in
+  // We need to convert this to a proper HTTP 302 redirect for browser navigation
+  if (response.status === 200) {
+    const data = await response.json() as { url?: string };
+    if (data.url) {
+      return c.redirect(data.url, 302);
+    }
+  }
+  
+  return response;
 });
 
 app.get("/api/v1/auth/me", requireAuth, async (c) =>
