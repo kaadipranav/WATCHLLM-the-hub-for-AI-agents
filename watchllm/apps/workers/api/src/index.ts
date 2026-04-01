@@ -468,7 +468,9 @@ app.get("/api/v1/auth/signin/github", async (c) => {
     },
     body: JSON.stringify({
       provider: "github",
-      callbackURL: `${origin}/api/v1/auth/callback/github`,
+      // Important: GitHub OAuth needs the exact URL configured in the GitHub app settings.
+      // Usually this means it needs to hit the API directly if the API is managing the callback
+      callbackURL: `${c.env.APP_URL}/api/v1/auth/callback/github`,
     }),
   });
   const response = await handleAuthRequest(internal, c.env);
@@ -502,7 +504,7 @@ app.get("/api/v1/auth/me", requireAuth, async (c) =>
 // Handle OAuth callbacks from social providers
 app.get("/api/v1/auth/callback/:provider", async (c) => {
   const url = new URL(c.req.url);
-  // Ensure the request appears to come from frontend so Better Auth validates state correctly
+  // Tell Better Auth the request came from where it expects (the APP_URL)
   if (url.hostname === "api.watchllm.dev") {
     url.hostname = "watchllm.dev";
   } else {
@@ -511,7 +513,8 @@ app.get("/api/v1/auth/callback/:provider", async (c) => {
     url.host = appUrlObj.host;
   }
   
-  const frontendOrigin = url.origin;
+  // We want to ultimately redirect the user to the frontend dashboard.
+  const frontendOrigin = c.env.APP_URL;
   
   const internal = new Request(url.toString(), {
     method: c.req.method,
@@ -522,12 +525,33 @@ app.get("/api/v1/auth/callback/:provider", async (c) => {
   
   // If the response is a redirect (from Better Auth), extract the redirect URL
   if (response.status === 302 || response.status === 301) {
+    // If it's trying to redirect to a relative path or the auth route, hijack it
+    // because Better Auth's default is sometimes to redirect to the callback URL again
+    const redirectUrl = new URL(response.headers.get("Location") || "", frontendOrigin);
+    if (!redirectUrl.searchParams.has("error")) {
+      const dashboardUrl = `${frontendOrigin}/dashboard`;
+      
+      // Preserve Set-Cookie headers for the session
+      const newResponse = Response.redirect(dashboardUrl, 302);
+      const setCookies = response.headers.getSetCookie?.() || [];
+      for (const cookie of setCookies) {
+        newResponse.headers.append("Set-Cookie", cookie);
+      }
+      return newResponse;
+    }
+    
     return response;
   }
   
-  // If it's a successful response, redirect to dashboard
+  // If it's a successful response (though OAuth usually uses 302), redirect to dashboard
   if (response.status === 200) {
-    return c.redirect(`${frontendOrigin}/dashboard`, 302);
+    const dashboardUrl = `${frontendOrigin}/dashboard`;
+    const newResponse = Response.redirect(dashboardUrl, 302);
+    const setCookies = response.headers.getSetCookie?.() || [];
+    for (const cookie of setCookies) {
+      newResponse.headers.append("Set-Cookie", cookie);
+    }
+    return newResponse;
   }
   
   return response;
