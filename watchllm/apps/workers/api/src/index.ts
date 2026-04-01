@@ -456,19 +456,29 @@ app.route("/api/v1/dev/mock-agent", mockAgentRoutes);
 
 app.get("/api/v1/auth/signin/github", async (c) => {
   const url = new URL(c.req.url);
-  const internal = new Request(`${url.origin}/api/v1/auth/sign-in/social`, {
+  const apiOrigin = url.origin;
+  const internal = new Request(`${apiOrigin}/api/v1/auth/sign-in/social`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       cookie: c.req.header("cookie") ?? "",
-      origin: url.origin,
+      origin: apiOrigin,
     },
     body: JSON.stringify({
       provider: "github",
-      callbackURL: `${c.env.APP_URL}/dashboard`,
+      callbackURL: `${apiOrigin}/api/v1/auth/callback/github`,
     }),
   });
-  return handleAuthRequest(internal, c.env);
+  const response = await handleAuthRequest(internal, c.env);
+  
+  // Copy Set-Cookie headers to the response
+  const setCookies = response.headers.getSetCookie?.() || [];
+  for (const cookie of setCookies) {
+    c.header("Set-Cookie", cookie);
+  }
+  
+  const body = await response.json();
+  return c.json(body, response.status as 200 | 201);
 });
 
 app.get("/api/v1/auth/me", requireAuth, async (c) =>
@@ -486,6 +496,23 @@ app.get("/api/v1/auth/me", requireAuth, async (c) =>
     });
   }),
 );
+
+// Handle OAuth callbacks from social providers
+app.get("/api/v1/auth/callback/:provider", async (c) => {
+  const response = await handleAuthRequest(c.req.raw, c.env);
+  
+  // If the response is a redirect (from Better Auth), extract the redirect URL
+  if (response.status === 302 || response.status === 301) {
+    return response;
+  }
+  
+  // If it's a successful response, redirect to dashboard
+  if (response.status === 200) {
+    return c.redirect(`${c.env.APP_URL}/dashboard`, 302);
+  }
+  
+  return response;
+});
 
 app.on(["GET", "POST", "PUT", "PATCH", "DELETE"], "/api/v1/auth/*", (c) =>
   handleAuthRequest(c.req.raw, c.env),
