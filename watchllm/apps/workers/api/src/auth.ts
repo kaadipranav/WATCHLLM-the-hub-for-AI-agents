@@ -54,12 +54,20 @@ export async function upsertAppUserByEmail(
 }
 
 export function createAuth(env: Env, requestUrl: string) {
-  // Use APP_URL as baseURL. Since we are rewriting requests from the frontend, 
-  // Better Auth should operate relative to the frontend domain for cookie consistency.
-  const baseURL = env.APP_URL.replace(/\/$/, "");
+  // Use the origin from the request if possible, as it might be proxied via Next.js
+  const reqOrigin = new URL(requestUrl).origin;
+  
+  // If deployed on api.watchllm.dev but frontend is watchllm.dev, we must ensure 
+  // Better Auth knows the browser is on watchllm.dev so the redirect_uri generated 
+  // is correct and the cookies match.
+  const isApiSubdomain = reqOrigin.includes("api.watchllm.dev");
+  const baseURL = isApiSubdomain 
+    ? reqOrigin.replace("api.", "") 
+    : env.APP_URL.replace(/\/$/, "");
+
   const trustedOrigins = isLocalAppUrl(env.APP_URL)
-    ? [baseURL, new URL(requestUrl).origin]
-    : [baseURL];
+    ? [baseURL, "http://localhost:3000", reqOrigin]
+    : [baseURL, reqOrigin, env.APP_URL];
 
   return betterAuth({
     secret: env.BETTER_AUTH_SECRET,

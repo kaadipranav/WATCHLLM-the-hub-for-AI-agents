@@ -455,16 +455,20 @@ app.get("/api/v1/health", (c) =>
 app.route("/api/v1/dev/mock-agent", mockAgentRoutes);
 
 app.get("/api/v1/auth/signin/github", async (c) => {
-  const internal = new Request(`${c.env.APP_URL}/api/v1/auth/sign-in/social`, {
+  const url = new URL(c.req.url);
+  // Force frontend origin for redirect matching
+  const origin = url.origin.replace("api.watchllm.dev", "watchllm.dev");
+  
+  const internal = new Request(`${origin}/api/v1/auth/sign-in/social`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       cookie: c.req.header("cookie") ?? "",
-      origin: c.env.APP_URL,
+      origin: origin,
     },
     body: JSON.stringify({
       provider: "github",
-      callbackURL: `${c.env.APP_URL}/api/v1/auth/callback/github`,
+      callbackURL: `${origin}/api/v1/auth/callback/github`,
     }),
   });
   const response = await handleAuthRequest(internal, c.env);
@@ -498,10 +502,16 @@ app.get("/api/v1/auth/me", requireAuth, async (c) =>
 // Handle OAuth callbacks from social providers
 app.get("/api/v1/auth/callback/:provider", async (c) => {
   const url = new URL(c.req.url);
-  // Ensure the request appears to come from APP_URL so Better Auth validates state correctly
-  const appUrlObj = new URL(c.env.APP_URL);
-  url.protocol = appUrlObj.protocol;
-  url.host = appUrlObj.host;
+  // Ensure the request appears to come from frontend so Better Auth validates state correctly
+  if (url.hostname === "api.watchllm.dev") {
+    url.hostname = "watchllm.dev";
+  } else {
+    const appUrlObj = new URL(c.env.APP_URL);
+    url.protocol = appUrlObj.protocol;
+    url.host = appUrlObj.host;
+  }
+  
+  const frontendOrigin = url.origin;
   
   const internal = new Request(url.toString(), {
     method: c.req.method,
@@ -517,7 +527,7 @@ app.get("/api/v1/auth/callback/:provider", async (c) => {
   
   // If it's a successful response, redirect to dashboard
   if (response.status === 200) {
-    return c.redirect(`${c.env.APP_URL}/dashboard`, 302);
+    return c.redirect(`${frontendOrigin}/dashboard`, 302);
   }
   
   return response;
@@ -525,9 +535,17 @@ app.get("/api/v1/auth/callback/:provider", async (c) => {
 
 app.on(["GET", "POST", "PUT", "PATCH", "DELETE"], "/api/v1/auth/*", (c) => {
   const url = new URL(c.req.url);
-  const appUrlObj = new URL(c.env.APP_URL);
-  url.protocol = appUrlObj.protocol;
-  url.host = appUrlObj.host;
+  
+  // If the request came directly to api.watchllm.dev, trick Better Auth into 
+  // thinking it came from the frontend watchllm.dev domain for cookie alignment
+  if (url.hostname === "api.watchllm.dev") {
+    url.hostname = "watchllm.dev";
+  } else {
+    // Localhost or other domains
+    const appUrlObj = new URL(c.env.APP_URL);
+    url.protocol = appUrlObj.protocol;
+    url.host = appUrlObj.host;
+  }
   
   const internal = new Request(url.toString(), {
     method: c.req.method,
