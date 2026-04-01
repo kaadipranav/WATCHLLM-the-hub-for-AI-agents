@@ -6,10 +6,27 @@ import { useState } from 'react';
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
 
+  const clearStaleAuthState = async () => {
+    try {
+      await fetch('/api/v1/auth/sign-out', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      });
+    } catch {
+      // Ignore sign-out errors; this call is best-effort cleanup.
+    }
+  };
+
   const handleGithubSignUp = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/auth/signin/github');
+      await clearStaleAuthState();
+
+      const response = await fetch('/api/v1/auth/signin/github', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
       const data = await response.json() as { url?: string };
       
       if (data.url) {
